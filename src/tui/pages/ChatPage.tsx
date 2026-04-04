@@ -71,7 +71,7 @@ export function ChatPage({
             placeholder={INPUT_PLACEHOLDER}
             focused
           />
-          <box marginTop={0}>
+          <box marginTop={0} border={['top']} borderColor={theme.bg} borderStyle="single">
             <AppFooter
               variant="chat"
               cwdDisplay={cwdDisplay}

@@ -26,7 +26,7 @@ export function NewChatPage({
   onInputChange,
   onSubmit,
 }: NewChatPageProps) {
-  const omnibarWidth = Math.max(36, Math.floor(termWidth * 0.4));
+  const omnibarWidth = Math.min(75, Math.floor(termWidth) * 0.9);
 
   return (
     <box
@@ -34,6 +34,8 @@ export function NewChatPage({
       flexGrow={1}
       backgroundColor={theme.bg}
       height="100%"
+      alignItems="center"
+      justifyContent="center"
     >
       <box flexGrow={1} minHeight={0} />
       <box flexDirection="column" alignItems="center" gap={1}>
@@ -55,7 +57,7 @@ export function NewChatPage({
         </box>
       </box>
       <box flexGrow={1} minHeight={0} />
-      <box paddingY={1}>
+      <box paddingY={1} width="100%">
         <AppFooter variant="splash" cwdDisplay={cwdDisplay} version={version} />
       </box>
     </box>
