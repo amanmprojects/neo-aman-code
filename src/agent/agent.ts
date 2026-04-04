@@ -7,4 +7,4 @@ const agent = new ToolLoopAgent({
     instructions: "You are a helpful assistant that can answer questions and help with tasks.",
 });
 
-export default agent;
+export { agent };

@@ -3,8 +3,11 @@ import { useCallback, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
 import type { ChatMessage } from "./types";
+import { useChat } from '@ai-sdk/react';
+import { agent } from '../agent/agent';
 
 import pkg from "../../package.json" with { type: "json" };
+import { DirectChatTransport, type UIMessage } from "ai";
 
 function shortenCwd(cwd: string): string {
   const home = process.env.HOME ?? "";
@@ -15,10 +18,11 @@ function shortenCwd(cwd: string): string {
   return cwd;
 }
 
-function sessionTitleFrom(messages: ChatMessage[]): string {
+function sessionTitleFrom(messages: UIMessage[]): string {
   const first = messages.find((m) => m.role === "user");
   if (!first) return "Chat";
-  const raw = first.content.trim();
+  const raw = first.parts.find((p) => p.type === "text")?.text.trim();
+  if (!raw) return "Chat";
   const t = raw.slice(0, 40);
   return t.length < raw.length ? `${t}…` : t;
 }
@@ -32,8 +36,12 @@ function mockReply(userText: string, userTurnIndex: number): string {
 
 export function App() {
   const { width: termWidth } = useTerminalDimensions();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [toggleSidebar, setToggleSidebar] = useState(true);
+  const { messages, sendMessage, status } = useChat({
+    transport: new DirectChatTransport({ agent }),
+  });
 
   const cwdDisplay = shortenCwd(process.cwd());
   const version = pkg.version ?? "0.0.0";
@@ -48,19 +56,12 @@ export function App() {
     const text = raw.trim();
     if (!text) return;
     setInputValue("");
-    setMessages((prev) => {
-      const userTurnIndex = prev.filter((m) => m.role === "user").length;
-      const nextUser: ChatMessage = { role: "user", content: text };
-      const nextAssistant: ChatMessage = {
-        role: "assistant",
-        content: mockReply(text, userTurnIndex),
-      };
-      return [...prev, nextUser, nextAssistant];
-    });
+    sendMessage({ text: text})
   }, []);
 
   useKeyboard((key) => {
     if (key.name === "escape") setInputValue("");
+    if (key.ctrl && key.name === "s") setToggleSidebar(!toggleSidebar);
   });
 
   if (messages.length === 0) {
@@ -89,6 +90,7 @@ export function App() {
         inputValue={inputValue}
         onInputChange={setInputValue}
         onSubmit={handleSubmit}
+        showSidebar={toggleSidebar}
       />
     </box>
   );

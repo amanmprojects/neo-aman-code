@@ -4,10 +4,12 @@ import { AppFooter } from "../components/AppFooter";
 import { Omnibar } from "../components/Omnibar";
 import { Sidebar } from "../components/Sidebar";
 import { UserMessage } from "../components/UserMessage";
+import type { UIMessage } from "ai";
+import { ScrollableMessageList } from "../components/ScrollableMessageList";
 const INPUT_PLACEHOLDER = "Message…";
 
 type ChatPageProps = {
-  messages: ChatMessage[];
+  messages: UIMessage[];
   sessionTitle: string;
   cwdDisplay: string;
   appLabel: string;
@@ -16,6 +18,7 @@ type ChatPageProps = {
   inputValue: string;
   onInputChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  showSidebar: boolean;
 };
 
 export function ChatPage({
@@ -27,6 +30,7 @@ export function ChatPage({
   inputValue,
   onInputChange,
   onSubmit,
+  showSidebar,
 }: ChatPageProps) {
 
   return (
@@ -40,27 +44,7 @@ export function ChatPage({
         paddingX={2}
       >
 
-        <scrollbox
-          flexGrow={1}
-          minHeight={0}
-          
-          stickyScroll
-          stickyStart="bottom"
-          rootOptions={{ backgroundColor: theme.bg }}
-          paddingRight={2}
-        >
-          <box flexDirection="column" paddingX={0} paddingY={1} gap={1}>
-            {messages.map((m, i) => (
-              m.role === 'user' ? <UserMessage key={i} message={m.content} /> : <text key={i} fg={theme.text} selectable>{m.content}</text>
-            ))}
-            <box>
-              <text fg={theme.text}>
-                <span fg={theme.accent}>▣</span>
-                {" Build · gpt-5.3-codex"}
-              </text>
-            </box>
-          </box>
-        </scrollbox>
+        <ScrollableMessageList messages={messages} />
 
         <box paddingX={0} paddingY={1} flexShrink={0} flexDirection="column" gap={0}>
           <Omnibar
@@ -81,11 +65,11 @@ export function ChatPage({
         </box>
       </box>
 
-      <Sidebar
+      {showSidebar && <Sidebar
         sessionTitle={sessionTitle}
         cwdDisplay={cwdDisplay}
         appLabel={appLabel}
-      />
+      />}
     </box>
   );
 }
