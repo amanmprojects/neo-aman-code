@@ -1,8 +1,8 @@
 /** Shared palette for OpenCode-style TUI */
 export const theme = {
   bg: "#000000",
-  panel: "#1e1e1e",
-  stripBar: "#262626",
+  panel: "#202020",
+  stripBar: "#101010",
   accent: "#4a90e2",
   text: "#e4e4e4",
   muted: "#888888",

@@ -19,20 +19,22 @@ export function Omnibar({
   focused = true,
 }: OmnibarProps) {
   return (
-    <box flexDirection="row" width={width} alignItems="stretch" paddingTop={1}>
-      <box
-        width={1}
-        flexShrink={0}
-        backgroundColor={theme.accent}
-      />
+    <box flexDirection="row" width={width} alignItems="stretch"
+      border={['left']}
+      borderColor={theme.accent}
+      focusedBorderColor={'red'}
+      borderStyle="heavy"
+    >
       <box
         flexGrow={1}
         flexShrink={1}
-        backgroundColor={theme.panel}
         paddingX={2}
-        paddingY={1}
         flexDirection="column"
         gap={1}
+        border={['top', 'bottom']}
+        borderColor={theme.panel}
+        borderStyle="single"
+        backgroundColor={theme.panel}
       >
         <input
           value={value}

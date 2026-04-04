@@ -14,7 +14,7 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <box
-      width={28}
+      width={40}
       flexShrink={0}
       flexDirection="column"
       backgroundColor={theme.sidebarBg}

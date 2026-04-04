@@ -37,6 +37,7 @@ export function ChatPage({
         minWidth={0}
         minHeight={0}
         flexShrink={1}
+        paddingX={2}
       >
 
         <scrollbox
@@ -46,8 +47,9 @@ export function ChatPage({
           stickyScroll
           stickyStart="bottom"
           rootOptions={{ backgroundColor: theme.bg }}
+          paddingRight={2}
         >
-          <box flexDirection="column" paddingX={2} paddingY={1} gap={1}>
+          <box flexDirection="column" paddingX={0} paddingY={1} gap={1}>
             {messages.map((m, i) => (
               m.role === 'user' ? <UserMessage key={i} message={m.content} /> : <text key={i} fg={theme.text} selectable>{m.content}</text>
             ))}
@@ -60,7 +62,7 @@ export function ChatPage({
           </box>
         </scrollbox>
 
-        <box paddingX={1} paddingTop={0} flexShrink={0} flexDirection="column" gap={0}>
+        <box paddingX={0} paddingY={1} flexShrink={0} flexDirection="column" gap={0}>
           <Omnibar
             width="100%"
             value={inputValue}

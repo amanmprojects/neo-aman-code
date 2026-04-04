@@ -33,7 +33,7 @@ export function AppFooter({ variant, cwdDisplay, version }: AppFooterProps) {
   return (
     <box
       flexShrink={0}
-      paddingX={1}
+      paddingX={0}
       paddingY={0}
       flexDirection="row"
       justifyContent="space-between"
