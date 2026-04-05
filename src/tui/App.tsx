@@ -3,10 +3,10 @@ import { useCallback, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
 import { ChatSessionProvider } from "./hooks/chatSession";
+import { ModelNameProvider } from "./hooks/modelName";
 
 import { useChat } from '@ai-sdk/react';
 import { agent } from '../agent/agent';
-import { DEFAULT_MODEL } from '../agent/providers';
 
 import pkg from "../../package.json" with { type: "json" };
 import { DirectChatTransport, type UIMessage } from "ai";
@@ -41,7 +41,7 @@ export function App() {
   const [inputValue, setInputValue] = useState("");
   const [toggleSidebar, setToggleSidebar] = useState(true);
 
-  const transport = useMemo(() => new DirectChatTransport({ agent }), [agent]);
+  const transport = useMemo(() => new DirectChatTransport({ agent }), []);
   const { messages, sendMessage, status } = useChat({
     transport,
   });
@@ -67,37 +67,36 @@ export function App() {
     if (key.ctrl && key.name === "s") setToggleSidebar((prev) => !prev);
   });
 
-  if (messages.length === 0) {
-    return (
-      <box flexGrow={1} backgroundColor="#000000" height="100%">
-        <NewChatPage
-          termWidth={termWidth}
-          cwdDisplay={cwdDisplay}
-          version={version}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSubmit={handleSubmit}
-        />
-      </box>
-    );
-  }
-
   return (
-    <box flexGrow={1} backgroundColor="#000000" height="100%" minHeight={0}>
-      <ChatSessionProvider status={status}>
-        <ChatPage
-          messages={messages}
-          modelName={DEFAULT_MODEL}
-          sessionTitle={sessionTitle}
-          cwdDisplay={cwdDisplay}
-          appLabel={appLabel}
-          version={version}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSubmit={handleSubmit}
-          showSidebar={toggleSidebar}
-        />
-      </ChatSessionProvider>
-    </box>
+    <ModelNameProvider>
+      {messages.length === 0 ? (
+        <box flexGrow={1} backgroundColor="#000000" height="100%">
+          <NewChatPage
+            termWidth={termWidth}
+            cwdDisplay={cwdDisplay}
+            version={version}
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            onSubmit={handleSubmit}
+          />
+        </box>
+      ) : (
+        <box flexGrow={1} backgroundColor="#000000" height="100%" minHeight={0}>
+          <ChatSessionProvider status={status}>
+            <ChatPage
+              messages={messages}
+              sessionTitle={sessionTitle}
+              cwdDisplay={cwdDisplay}
+              appLabel={appLabel}
+              version={version}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              onSubmit={handleSubmit}
+              showSidebar={toggleSidebar}
+            />
+          </ChatSessionProvider>
+        </box>
+      )}
+    </ModelNameProvider>
   );
 }

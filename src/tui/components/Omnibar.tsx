@@ -1,5 +1,6 @@
 import type { InputProps } from "@opentui/react";
 import { theme } from "../theme";
+import { useModelName } from "../hooks/modelName";
 
 type OmnibarProps = {
   width: number | "100%";
@@ -18,6 +19,8 @@ export function Omnibar({
   placeholder,
   focused = true,
 }: OmnibarProps) {
+  const modelName = useModelName();
+
   return (
     <box flexDirection="row" width={width} alignItems="stretch"
       border={['left']}
@@ -50,7 +53,7 @@ export function Omnibar({
         <text fg={theme.dim}>
           <span fg={theme.accent}>Build</span>
           {"  "}
-          <span fg={theme.text}>GPT-5.3-Codex GitHub Copilot</span>
+          <span fg={theme.text}>{modelName}</span>
           {" · "}
           <span fg={theme.orange}>xhigh</span>
         </text>

@@ -5,10 +5,10 @@ import { UserMessage } from "./UserMessage";
 import { AssistantMessage } from "./AssistantMessage";
 import { MessageFrame } from "./MessageFrame";
 import { useChatSessionStatus } from "../hooks/chatSession";
+import { useModelName } from "../hooks/modelName";
 
 type ScrollableMessageListProps = {
     messages: UIMessage[];
-    modelName: string;
 };
 
 /** Wheel / trackpad delta multiplier (OpenTUI default is 1). */
@@ -21,7 +21,8 @@ const messageListScrollAcceleration: ScrollAcceleration = {
     reset() {},
 };
 
-export function ScrollableMessageList({ messages, modelName }: ScrollableMessageListProps) {
+export function ScrollableMessageList({ messages }: ScrollableMessageListProps) {
+    const modelName = useModelName();
     const chatStatus = useChatSessionStatus();
     const lastId = messages[messages.length - 1]?.id;
     const liveTurn =
