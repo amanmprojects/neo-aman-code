@@ -5,6 +5,7 @@ import { MessageFrame } from "./MessageFrame";
 import { syntaxStyleForAssistantMarkdown } from "../assistantMarkdown";
 import { ListDirToolBlock } from "./tools/ListDirToolBlock";
 import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
+import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
 const markdownSyntaxReasoning = syntaxStyleForAssistantMarkdown("reasoning");
@@ -85,6 +86,10 @@ export function AssistantMessage({
                         return <ListDirToolBlock key={key} invocation={part} />;
                     case "tool-readFile":
                         return <ReadFileToolBlock key={key} invocation={part} />;
+                    case "tool-tavilySearch":
+                        return <TavilySearchToolBlock key={key} invocation={part} />;
+                    case "tool-tavilyExtract":
+                        return <TavilyExtractToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

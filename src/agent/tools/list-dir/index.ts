@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { tool, type UIToolInvocation } from "ai";
 import { z } from "zod";
 import { isBlockedDevicePath, isUNCPath } from "../../path-guards";
-import { listDirToolDescription } from "./prompt";
+import { getListDirToolDescription } from "./prompt";
 
 const DEFAULT_LIMIT = 200;
 
@@ -92,7 +92,7 @@ async function mapWithConcurrency<T, U>(
 }
 
 export const listDir = tool({
-    description: listDirToolDescription(),
+    description: getListDirToolDescription(),
     inputSchema: z.object({
         path: z
             .string()

@@ -1,29 +1,32 @@
-import type { ListDirToolInvocation } from "../../../agent/tools/list-dir/list-dir";
+import type { ListDirToolInvocation } from "../../../agent/tools/list-dir";
+import { useVerbose } from "../../hooks/verbose";
 import { theme } from "../../theme";
 import { MessageFrame } from "../MessageFrame";
 
-const MAX_ENTRY_LINES = 18;
-
-function formatListDirOutput(output: NonNullable<ListDirToolInvocation["output"]>): string {
+function formatListDirOutput(
+    output: NonNullable<ListDirToolInvocation["output"]>,
+    verbose: boolean,
+): string {
     if ("error" in output && typeof output.error === "string") {
         return output.error;
+    }
+    if (!verbose) {
+        return `Listed: ${output.path}`;
     }
     const lines = [
         `Listed: ${output.path}`,
         `${output.count} of ${output.totalCount} entries${output.truncated ? " (truncated)" : ""}`,
     ];
-    for (const entry of output.entries.slice(0, MAX_ENTRY_LINES)) {
+    for (const entry of output.entries) {
         const size =
             entry.size !== undefined ? ` ${entry.size}B` : entry.children !== undefined ? ` (${entry.children} items)` : "";
         lines.push(`  ${entry.name} [${entry.type}]${size}`);
-    }
-    if (output.entries.length > MAX_ENTRY_LINES) {
-        lines.push(`  … ${output.entries.length - MAX_ENTRY_LINES} more`);
     }
     return lines.join("\n");
 }
 
 export function ListDirToolBlock({ invocation }: { invocation: ListDirToolInvocation }) {
+    const verbose = useVerbose();
     switch (invocation.state) {
         case "input-streaming":
             return (
@@ -42,7 +45,7 @@ export function ListDirToolBlock({ invocation }: { invocation: ListDirToolInvoca
         case "output-available":
             return (
                 <MessageFrame border={["left"]} borderColor={theme.panel}>
-                    <text fg={theme.text}>{formatListDirOutput(invocation.output)}</text>
+                    <text fg={theme.muted}>{formatListDirOutput(invocation.output, verbose)}</text>
                 </MessageFrame>
             );
         case "output-error":

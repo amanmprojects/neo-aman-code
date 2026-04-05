@@ -3,7 +3,7 @@ export const listDirToolName = "listDir";
 /**
  * Renders the listDir tool description with detailed usage instructions.
  */
-export function listDirToolDescription(): string {
+export function getListDirToolDescription(): string {
     return `List the files and directories inside a directory, including lightweight metadata like entry type and size.
 
 Usage:

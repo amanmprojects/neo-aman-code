@@ -1,3 +1,4 @@
+import { realpath } from "node:fs/promises";
 import * as path from "node:path";
 
 /**
@@ -17,6 +18,8 @@ const WINDOWS_RESERVED = new Set([
     "aux",
     "nul",
     "clock$",
+    "conin$",
+    "conout$",
     "com1",
     "com2",
     "com3",
@@ -41,9 +44,16 @@ function isWindowsReservedPath(normalized: string): boolean {
     const withoutSlash = normalized.replaceAll("/", "\\");
     const segments = withoutSlash.split("\\").filter(Boolean);
     for (const segment of segments) {
-        const base = segment.includes(".")
-            ? segment.slice(0, Math.max(0, segment.indexOf(".")))
-            : segment;
+        // Strip extension (.txt) and ADS suffix (:$DATA)
+        let base = segment;
+        const colonIdx = base.indexOf(":");
+        if (colonIdx > 0) {
+            base = base.slice(0, colonIdx);
+        }
+        const dotIdx = base.indexOf(".");
+        if (dotIdx > 0) {
+            base = base.slice(0, dotIdx);
+        }
         if (WINDOWS_RESERVED.has(base.toLowerCase())) {
             return true;
         }
@@ -53,29 +63,39 @@ function isWindowsReservedPath(normalized: string): boolean {
 
 /**
  * Paths that would block, hang, or yield unbounded output when read or listed.
+ * Follows symlinks via realpath before prefix checks so links into blocked trees are rejected.
  */
 export async function isBlockedDevicePath(
     resolvedPath: string,
 ): Promise<boolean> {
     const normalized = path.normalize(resolvedPath);
 
+    let resolved: string;
+    try {
+        resolved = await realpath(normalized);
+    } catch {
+        resolved = normalized;
+    }
+
     if (process.platform === "win32") {
-        const lower = normalized.toLowerCase();
+        const winPath = path.win32.normalize(resolved);
+        const lower = winPath.toLowerCase();
         if (
             lower.startsWith("\\\\.\\") ||
             lower.startsWith("\\\\?\\") ||
-            isWindowsReservedPath(normalized)
+            isWindowsReservedPath(winPath)
         ) {
             return true;
         }
         return false;
     }
 
-    const posix = normalized.replaceAll("\\", "/");
+    const posix = path.posix.normalize(resolved);
     if (
         posix.startsWith("/dev/") ||
         posix.startsWith("/proc/") ||
-        posix.startsWith("/sys/")
+        posix.startsWith("/sys/") ||
+        posix.startsWith("/run/")
     ) {
         return true;
     }

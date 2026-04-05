@@ -5,12 +5,16 @@ import { ChatPage } from "./pages/ChatPage";
 import { ChatSessionProvider } from "./hooks/chatSession";
 import { useLayoutChrome } from "./hooks/layoutChrome";
 import { ModelNameProvider } from "./hooks/modelName";
+import { VerboseProvider } from "./hooks/verbose";
 
-import { useChat } from '@ai-sdk/react';
-import { agent, type AgentUIMessage } from '../agent';
+import { useChat } from "@ai-sdk/react";
+import { DirectChatTransport } from "ai";
+
+import { agent, type AgentUIMessage } from "../agent";
 
 import pkg from "../../package.json" with { type: "json" };
-import { DirectChatTransport } from "ai";
+
+const transport = new DirectChatTransport({ agent });
 
 function shortenCwd(cwd: string): string {
   const home = process.env.HOME ?? "";
@@ -30,19 +34,11 @@ function sessionTitleFrom(messages: AgentUIMessage[]): string {
   return t.length < raw.length ? `${t}…` : t;
 }
 
-function mockReply(userText: string, userTurnIndex: number): string {
-  if (userTurnIndex === 0) return "Hey! What can I help you with today?";
-  const clipped =
-    userText.length > 80 ? `${userText.slice(0, 80)}…` : userText;
-  return `I heard: "${clipped}" — mock reply.`;
-}
-
-export function App() {
+function AppShell() {
   const { width: termWidth } = useTerminalDimensions();
   const [inputValue, setInputValue] = useState("");
   const { showSidebar, showFooter } = useLayoutChrome();
 
-  const transport = useMemo(() => new DirectChatTransport({ agent }), []);
   const { messages, sendMessage, status } = useChat<AgentUIMessage>({
     transport,
   });
@@ -56,19 +52,22 @@ export function App() {
     [messages],
   );
 
-  const handleSubmit = useCallback((raw: string) => {
-    const text = raw.trim();
-    if (!text) return;
-    setInputValue("");
-    sendMessage({ text: text})
-  }, []);
+  const handleSubmit = useCallback(
+    (raw: string) => {
+      const text = raw.trim();
+      if (!text) return;
+      setInputValue("");
+      sendMessage({ text });
+    },
+    [sendMessage],
+  );
 
   useKeyboard((key) => {
     if (key.name === "escape") setInputValue("");
   });
 
   return (
-    <ModelNameProvider>
+    <>
       {messages.length === 0 ? (
         <box flexGrow={1} backgroundColor="#000000" height="100%">
           <NewChatPage
@@ -99,6 +98,16 @@ export function App() {
           </ChatSessionProvider>
         </box>
       )}
+    </>
+  );
+}
+
+export function App() {
+  return (
+    <ModelNameProvider>
+      <VerboseProvider>
+        <AppShell />
+      </VerboseProvider>
     </ModelNameProvider>
   );
 }

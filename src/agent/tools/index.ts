@@ -1,7 +1,10 @@
-import { listDir } from "./list-dir/list-dir";
-import { readFile } from "./read-file/read-file";
+import type { ToolSet } from "ai";
+import { listDir } from "./list-dir";
+import { readFile } from "./read-file";
+import { createTavilyTools } from "./tavily";
 
 export const toolSet = {
     listDir,
     readFile,
-};
+    ...createTavilyTools(),
+} as ToolSet;

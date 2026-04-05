@@ -43,7 +43,7 @@ export function AppFooter({ variant, cwdDisplay, version }: AppFooterProps) {
         esc interrupt
       </text>
       <text attributes={TextAttributes.DIM} fg={theme.dim}>
-        tab agents  ctrl+p commands  ctrl+s sidebar  ctrl+f footer
+        tab agents  ctrl+p commands  ctrl+s sidebar  ctrl+f footer  ctrl+v verbose
       </text>
     </box>
   );
