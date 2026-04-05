@@ -16,6 +16,7 @@ type NewChatPageProps = {
   inputValue: string;
   onInputChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  showFooter: boolean;
 };
 
 export function NewChatPage({
@@ -25,6 +26,7 @@ export function NewChatPage({
   inputValue,
   onInputChange,
   onSubmit,
+  showFooter,
 }: NewChatPageProps) {
   const omnibarWidth = Math.min(75, Math.max(36, Math.floor(termWidth * 0.9)));
 
@@ -57,9 +59,11 @@ export function NewChatPage({
         </box>
       </box>
       <box flexGrow={1} minHeight={0} />
-      <box paddingY={1} width="100%">
-        <AppFooter variant="splash" cwdDisplay={cwdDisplay} version={version} />
-      </box>
+      {showFooter && (
+        <box paddingY={1} width="100%">
+          <AppFooter variant="splash" cwdDisplay={cwdDisplay} version={version} />
+        </box>
+      )}
     </box>
   );
 }

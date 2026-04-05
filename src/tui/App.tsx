@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
 import { ChatSessionProvider } from "./hooks/chatSession";
+import { useLayoutChrome } from "./hooks/layoutChrome";
 import { ModelNameProvider } from "./hooks/modelName";
 
 import { useChat } from '@ai-sdk/react';
@@ -39,7 +40,7 @@ function mockReply(userText: string, userTurnIndex: number): string {
 export function App() {
   const { width: termWidth } = useTerminalDimensions();
   const [inputValue, setInputValue] = useState("");
-  const [toggleSidebar, setToggleSidebar] = useState(true);
+  const { showSidebar, showFooter } = useLayoutChrome();
 
   const transport = useMemo(() => new DirectChatTransport({ agent }), []);
   const { messages, sendMessage, status } = useChat({
@@ -64,7 +65,6 @@ export function App() {
 
   useKeyboard((key) => {
     if (key.name === "escape") setInputValue("");
-    if (key.ctrl && key.name === "s") setToggleSidebar((prev) => !prev);
   });
 
   return (
@@ -78,6 +78,7 @@ export function App() {
             inputValue={inputValue}
             onInputChange={setInputValue}
             onSubmit={handleSubmit}
+            showFooter={showFooter}
           />
         </box>
       ) : (
@@ -92,7 +93,8 @@ export function App() {
               inputValue={inputValue}
               onInputChange={setInputValue}
               onSubmit={handleSubmit}
-              showSidebar={toggleSidebar}
+              showSidebar={showSidebar}
+              showFooter={showFooter}
             />
           </ChatSessionProvider>
         </box>

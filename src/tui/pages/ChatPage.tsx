@@ -17,6 +17,7 @@ type ChatPageProps = {
   onInputChange: (value: string) => void;
   onSubmit: (value: string) => void;
   showSidebar: boolean;
+  showFooter: boolean;
 };
 
 export function ChatPage({
@@ -29,6 +30,7 @@ export function ChatPage({
   onInputChange,
   onSubmit,
   showSidebar,
+  showFooter,
 }: ChatPageProps) {
 
   return (
@@ -53,13 +55,11 @@ export function ChatPage({
             placeholder={INPUT_PLACEHOLDER}
             focused
           />
-          <box marginTop={0} border={['top']} borderColor={theme.bg} borderStyle="single">
-            <AppFooter
-              variant="chat"
-              cwdDisplay={cwdDisplay}
-              version={version}
-            />
-          </box>
+          {showFooter && (
+            <box marginTop={0} border={["top"]} borderColor={theme.bg} borderStyle="single">
+              <AppFooter variant="chat" cwdDisplay={cwdDisplay} version={version} />
+            </box>
+          )}
         </box>
       </box>
 
