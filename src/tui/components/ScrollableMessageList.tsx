@@ -23,12 +23,17 @@ const messageListScrollAcceleration: ScrollAcceleration = {
     reset() {},
 };
 
+const MAX_PREVIEW_LENGTH = 200;
+
 function systemMessagePreview(message: UIMessage): string {
     const parts = message.parts ?? [];
     const texts = parts
         .filter((p): p is { type: "text"; text: string } => p.type === "text")
         .map((p) => p.text);
-    return texts.join("\n").trim() || "(no text parts)";
+    const text = texts.join("\n").trim();
+    if (!text) return "(no text parts)";
+    if (text.length <= MAX_PREVIEW_LENGTH) return text;
+    return `${text.slice(0, MAX_PREVIEW_LENGTH)}…`;
 }
 
 export function ScrollableMessageList({
