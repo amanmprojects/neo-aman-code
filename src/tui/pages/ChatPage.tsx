@@ -2,12 +2,12 @@ import { theme } from "../theme";
 import { AppFooter } from "../components/AppFooter";
 import { Omnibar } from "../components/Omnibar";
 import { Sidebar } from "../components/Sidebar";
-import type { UIMessage } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import { ScrollableMessageList } from "../components/ScrollableMessageList";
 const INPUT_PLACEHOLDER = "Message…";
 
 type ChatPageProps = {
-  messages: UIMessage[];
+  messages: AgentUIMessage[];
   sessionTitle: string;
   cwdDisplay: string;
   appLabel: string;

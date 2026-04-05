@@ -1,7 +1,10 @@
 import { theme } from "../theme";
-import type { DynamicToolUIPart, ReasoningUIPart, TextUIPart, UIMessage } from "ai";
+import type { ReasoningUIPart, TextUIPart } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import { MessageFrame } from "./MessageFrame";
 import { syntaxStyleForAssistantMarkdown } from "../assistantMarkdown";
+import { ListDirToolBlock } from "./tools/ListDirToolBlock";
+import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
 const markdownSyntaxReasoning = syntaxStyleForAssistantMarkdown("reasoning");
@@ -14,22 +17,12 @@ function AssistantReasoningPart({
     streaming: boolean;
 }) {
     return (
-        <MessageFrame borderColor={theme.panel} border={["left"]}>
+        <MessageFrame borderColor={theme.panel} border={["left"]} borderStyle="heavy">
             <markdown
                 content={part.text}
                 syntaxStyle={markdownSyntaxReasoning}
                 streaming={streaming}
             />
-        </MessageFrame>
-    );
-}
-
-function AssistantDynamicToolPart({ part }: { part: DynamicToolUIPart }) {
-    return (
-        <MessageFrame border={false}>
-            <text fg={theme.muted}>
-                {part.toolName}: {part.state}
-            </text>
         </MessageFrame>
     );
 }
@@ -52,7 +45,7 @@ function AssistantTextPart({
     );
 }
 
-function AssistantUnknownPart({ part }: { part: UIMessage["parts"][number] }) {
+function AssistantUnknownPart({ part }: { part: AgentUIMessage["parts"][number] }) {
     return (
         <MessageFrame border={false}>
             <text fg={theme.muted}>Unknown part type: {part.type}</text>
@@ -64,7 +57,7 @@ export function AssistantMessage({
     message,
     markdownStreaming,
 }: {
-    message: UIMessage;
+    message: AgentUIMessage;
     markdownStreaming: boolean;
 }) {
     return (
@@ -88,8 +81,10 @@ export function AssistantMessage({
                                 streaming={markdownStreaming}
                             />
                         );
-                    case "dynamic-tool":
-                        return <AssistantDynamicToolPart key={key} part={part} />;
+                    case "tool-listDir":
+                        return <ListDirToolBlock key={key} invocation={part} />;
+                    case "tool-readFile":
+                        return <ReadFileToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

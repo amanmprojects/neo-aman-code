@@ -1,4 +1,5 @@
-import type { TextUIPart, UIMessage } from "ai";
+import type { TextUIPart } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import { theme } from "../theme";
 import { MessageFrame } from "./MessageFrame";
 
@@ -17,7 +18,7 @@ function UserTextPart({ part }: { part: TextUIPart }) {
     );
 }
 
-function UserUnknownPart({ part }: { part: UIMessage['parts'][number] }) {
+function UserUnknownPart({ part }: { part: AgentUIMessage["parts"][number] }) {
     return (
         <MessageFrame borderColor={theme.accent}>
             <text fg={theme.muted}>Unknown part type: {part.type}</text>
@@ -25,7 +26,7 @@ function UserUnknownPart({ part }: { part: UIMessage['parts'][number] }) {
     );
 }
 
-export function UserMessage({ message }: { message: UIMessage }) {
+export function UserMessage({ message }: { message: AgentUIMessage }) {
     return (
         <box flexDirection="column" gap={1} flexShrink={0}>
             {message.parts.map((part, index) => {

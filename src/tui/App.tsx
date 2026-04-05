@@ -7,10 +7,10 @@ import { useLayoutChrome } from "./hooks/layoutChrome";
 import { ModelNameProvider } from "./hooks/modelName";
 
 import { useChat } from '@ai-sdk/react';
-import { agent } from '../agent/agent';
+import { agent, type AgentUIMessage } from '../agent';
 
 import pkg from "../../package.json" with { type: "json" };
-import { DirectChatTransport, type UIMessage } from "ai";
+import { DirectChatTransport } from "ai";
 
 function shortenCwd(cwd: string): string {
   const home = process.env.HOME ?? "";
@@ -21,7 +21,7 @@ function shortenCwd(cwd: string): string {
   return cwd;
 }
 
-function sessionTitleFrom(messages: UIMessage[]): string {
+function sessionTitleFrom(messages: AgentUIMessage[]): string {
   const first = messages.find((m) => m.role === "user");
   if (!first) return "Chat";
   const raw = first.parts.find((p) => p.type === "text")?.text.trim();
@@ -43,7 +43,7 @@ export function App() {
   const { showSidebar, showFooter } = useLayoutChrome();
 
   const transport = useMemo(() => new DirectChatTransport({ agent }), []);
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status } = useChat<AgentUIMessage>({
     transport,
   });
 
