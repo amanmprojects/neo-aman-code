@@ -1,4 +1,3 @@
-import type { ChatMessage } from "../types";
 import { theme } from "../theme";
 import { AppFooter } from "../components/AppFooter";
 import { Omnibar } from "../components/Omnibar";
@@ -9,6 +8,7 @@ const INPUT_PLACEHOLDER = "Message…";
 
 type ChatPageProps = {
   messages: UIMessage[];
+  modelName: string;
   sessionTitle: string;
   cwdDisplay: string;
   appLabel: string;
@@ -22,6 +22,7 @@ type ChatPageProps = {
 
 export function ChatPage({
   messages,
+  modelName,
   sessionTitle,
   cwdDisplay,
   appLabel,
@@ -43,7 +44,7 @@ export function ChatPage({
         paddingX={2}
       >
 
-        <ScrollableMessageList messages={messages} />
+        <ScrollableMessageList messages={messages} modelName={modelName} />
 
         <box paddingX={0} paddingY={1} flexShrink={0} flexDirection="column" gap={0}>
           <Omnibar

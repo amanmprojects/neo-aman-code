@@ -2,9 +2,11 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useCallback, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
+import { ChatSessionProvider } from "./hooks/chatSession";
 
 import { useChat } from '@ai-sdk/react';
 import { agent } from '../agent/agent';
+import { DEFAULT_MODEL } from '../agent/providers';
 
 import pkg from "../../package.json" with { type: "json" };
 import { DirectChatTransport, type UIMessage } from "ai";
@@ -82,17 +84,20 @@ export function App() {
 
   return (
     <box flexGrow={1} backgroundColor="#000000" height="100%" minHeight={0}>
-      <ChatPage
-        messages={messages}
-        sessionTitle={sessionTitle}
-        cwdDisplay={cwdDisplay}
-        appLabel={appLabel}
-        version={version}
-        inputValue={inputValue}
-        onInputChange={setInputValue}
-        onSubmit={handleSubmit}
-        showSidebar={toggleSidebar}
-      />
+      <ChatSessionProvider status={status}>
+        <ChatPage
+          messages={messages}
+          modelName={DEFAULT_MODEL}
+          sessionTitle={sessionTitle}
+          cwdDisplay={cwdDisplay}
+          appLabel={appLabel}
+          version={version}
+          inputValue={inputValue}
+          onInputChange={setInputValue}
+          onSubmit={handleSubmit}
+          showSidebar={toggleSidebar}
+        />
+      </ChatSessionProvider>
     </box>
   );
 }

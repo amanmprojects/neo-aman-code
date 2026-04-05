@@ -2,9 +2,9 @@ import type { TextUIPart, UIMessage } from "ai";
 import { theme } from "../theme";
 import { MessageFrame } from "./MessageFrame";
 
-function UserTextPart({ part, index }: { part: TextUIPart, index: number }) {
+function UserTextPart({ part }: { part: TextUIPart }) {
     return (
-        <MessageFrame key={index}
+        <MessageFrame
             borderColor={theme.accent}
             border={["left"]}
             backgroundColor={theme.stripBar}
@@ -17,9 +17,9 @@ function UserTextPart({ part, index }: { part: TextUIPart, index: number }) {
     );
 }
 
-function UserUnknownPart({ part, index }: { part: UIMessage['parts'][number], index: number }) {
+function UserUnknownPart({ part }: { part: UIMessage['parts'][number] }) {
     return (
-        <MessageFrame key={index} borderColor={theme.accent}>
+        <MessageFrame borderColor={theme.accent}>
             <text fg={theme.muted}>Unknown part type: {part.type}</text>
         </MessageFrame>
     );
@@ -29,14 +29,15 @@ export function UserMessage({ message }: { message: UIMessage }) {
     return (
         <box flexDirection="column" gap={1} flexShrink={0}>
             {message.parts.map((part, index) => {
+                const key = `${part.type}-${index}`;
                 switch (part.type) {
                     case "text":
                         return (
-                            <UserTextPart part={part} index={index} />
+                            <UserTextPart key={key} part={part} />
                         );
                     default:
                         return (
-                            <UserUnknownPart part={part} index={index} />
+                            <UserUnknownPart key={key} part={part} />
                         )
                 }
             })}
