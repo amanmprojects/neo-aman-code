@@ -26,7 +26,7 @@ export function NewChatPage({
   onInputChange,
   onSubmit,
 }: NewChatPageProps) {
-  const omnibarWidth = Math.min(75, Math.floor(termWidth * 0.9));
+  const omnibarWidth = Math.min(75, Math.max(36, Math.floor(termWidth * 0.9)));
 
   return (
     <box

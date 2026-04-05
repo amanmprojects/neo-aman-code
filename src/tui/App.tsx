@@ -2,7 +2,7 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useCallback, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
-import type { ChatMessage } from "./types";
+
 import { useChat } from '@ai-sdk/react';
 import { agent } from '../agent/agent';
 
@@ -36,11 +36,12 @@ function mockReply(userText: string, userTurnIndex: number): string {
 
 export function App() {
   const { width: termWidth } = useTerminalDimensions();
-  // const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [toggleSidebar, setToggleSidebar] = useState(true);
+
+  const transport = useMemo(() => new DirectChatTransport({ agent }), [agent]);
   const { messages, sendMessage, status } = useChat({
-    transport: new DirectChatTransport({ agent }),
+    transport,
   });
 
   const cwdDisplay = shortenCwd(process.cwd());
@@ -61,7 +62,7 @@ export function App() {
 
   useKeyboard((key) => {
     if (key.name === "escape") setInputValue("");
-    if (key.ctrl && key.name === "s") setToggleSidebar(!toggleSidebar);
+    if (key.ctrl && key.name === "s") setToggleSidebar((prev) => !prev);
   });
 
   if (messages.length === 0) {

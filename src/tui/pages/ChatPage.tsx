@@ -3,7 +3,6 @@ import { theme } from "../theme";
 import { AppFooter } from "../components/AppFooter";
 import { Omnibar } from "../components/Omnibar";
 import { Sidebar } from "../components/Sidebar";
-import { UserMessage } from "../components/UserMessage";
 import type { UIMessage } from "ai";
 import { ScrollableMessageList } from "../components/ScrollableMessageList";
 const INPUT_PLACEHOLDER = "Message…";
