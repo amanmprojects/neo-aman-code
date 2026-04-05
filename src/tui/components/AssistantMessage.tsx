@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { theme } from "../theme";
 import type { DynamicToolUIPart, ReasoningUIPart, TextUIPart, UIMessage } from "ai";
 import { MessageFrame } from "./MessageFrame";
@@ -91,7 +92,7 @@ export function AssistantMessage({
                     case "dynamic-tool":
                         return <AssistantDynamicToolPart key={key} part={part} />;
                     case "step-start":
-                        return null;
+                        return <Fragment key={key} />;
                     default:
                         return <AssistantUnknownPart key={key} part={part} />;
                 }

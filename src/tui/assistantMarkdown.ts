@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -13,98 +14,135 @@ const hex = (s: string) => RGBA.fromHex(s);
 
 const projectRoot = path.join(fileURLToPath(new URL("../..", import.meta.url)));
 const wasmDir = path.join(projectRoot, "node_modules/tree-sitter-wasms/out");
+const bundledHighlightsDir = path.join(projectRoot, "src/tui/bundled-tree-sitter-queries");
 
-type Lang = {
+/** Grammar bundled via `tree-sitter-wasms` with repo-local highlights + remote fallback. */
+type LangBundledWasm = {
+  kind: "bundled";
   filetype: string;
-  /** Relative name under `tree-sitter-wasms/out` (omit if `wasmPath` is set). */
-  wasm?: string;
-  wasmPath?: string;
+  wasm: string;
+  wasmPath?: never;
+  highlightsRemote: string;
+  aliases?: string[];
+};
+
+/** Wasm and highlights loaded from explicit paths (e.g. npm packages). */
+type LangExplicitWasmPath = {
+  kind: "explicit";
+  filetype: string;
+  wasmPath: string;
+  wasm?: never;
   highlights: string;
   aliases?: string[];
 };
 
+type Lang = LangBundledWasm | LangExplicitWasmPath;
+
+function resolveHighlightPath(localPath: string, remoteFallback: string): string {
+  if (fs.existsSync(localPath)) {
+    return localPath;
+  }
+  console.warn(
+    `[assistantMarkdown] Local highlights missing at ${localPath}; falling back to remote (requires network).`,
+  );
+  return remoteFallback;
+}
+
 const extraLangs: Lang[] = [
   {
+    kind: "bundled",
     filetype: "python",
     wasm: "tree-sitter-python.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-python/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "css",
     wasm: "tree-sitter-css.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-css/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "bash",
     wasm: "tree-sitter-bash.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-bash/master/queries/highlights.scm",
     aliases: ["shell"],
   },
   {
+    kind: "bundled",
     filetype: "html",
     wasm: "tree-sitter-html.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-html/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "json",
     wasm: "tree-sitter-json.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-json/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "go",
     wasm: "tree-sitter-go.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-go/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "rust",
     wasm: "tree-sitter-rust.wasm",
-    // Pin to tree-sitter-wasms grammar version (master queries use newer node names).
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-rust/v0.20.4/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "java",
     wasm: "tree-sitter-java.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-java/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "ruby",
     wasm: "tree-sitter-ruby.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-ruby/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "php",
     wasm: "tree-sitter-php.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-php/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "cpp",
     wasm: "tree-sitter-cpp.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-cpp/v0.20.4/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "c",
     wasm: "tree-sitter-c.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-c/master/queries/highlights.scm",
   },
   {
+    kind: "bundled",
     filetype: "csharp",
     wasm: "tree-sitter-c_sharp.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-c-sharp/v0.20.0/queries/highlights.scm",
   },
   {
+    kind: "explicit",
     filetype: "sql",
     wasmPath: path.join(projectRoot, "node_modules/@lumis-sh/wasm-sql/tree-sitter-sql.wasm"),
     highlights: path.join(
@@ -113,21 +151,41 @@ const extraLangs: Lang[] = [
     ),
   },
   {
+    kind: "bundled",
     filetype: "toml",
     wasm: "tree-sitter-toml.wasm",
-    highlights:
+    highlightsRemote:
       "https://raw.githubusercontent.com/tree-sitter/tree-sitter-toml/master/queries/highlights.scm",
+  },
+  {
+    kind: "bundled",
+    filetype: "yaml",
+    wasm: "tree-sitter-yaml.wasm",
+    highlightsRemote:
+      "https://raw.githubusercontent.com/helix-editor/helix/master/runtime/queries/yaml/highlights.scm",
+    aliases: ["yml"],
   },
 ];
 
-const extraParsers: FiletypeParserOptions[] = extraLangs.map(
-  ({ filetype, wasm, wasmPath, highlights, aliases }) => ({
-    filetype,
-    aliases,
-    wasm: wasmPath ?? path.join(wasmDir, wasm!),
-    queries: { highlights: [highlights] },
-  }),
-);
+const extraParsers: FiletypeParserOptions[] = extraLangs.map((lang) => {
+  if (lang.kind === "explicit") {
+    return {
+      filetype: lang.filetype,
+      aliases: lang.aliases,
+      wasm: lang.wasmPath,
+      queries: { highlights: [lang.highlights] },
+    };
+  }
+  const localHighlights = path.join(bundledHighlightsDir, `${lang.filetype}.scm`);
+  return {
+    filetype: lang.filetype,
+    aliases: lang.aliases,
+    wasm: path.join(wasmDir, lang.wasm),
+    queries: {
+      highlights: [resolveHighlightPath(localHighlights, lang.highlightsRemote)],
+    },
+  };
+});
 
 addDefaultParsers(extraParsers);
 
