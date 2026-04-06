@@ -1,4 +1,5 @@
 import "./tui/assistantMarkdown";
+import "opentui-spinner/react";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { App } from "./tui/App";
@@ -17,10 +18,15 @@ renderer.on("selection", (selection) => {
                 throw new Error("no navigator clipboard");
             }
         } catch {
-            renderer.copyToClipboardOSC52(text);
+            try {
+                renderer.copyToClipboardOSC52(text);
+            } catch {
+                // OSC52 may be unsupported; ignore
+            }
+        } finally {
+            renderer.clearSelection();
+            renderer.requestRender();
         }
-        renderer.clearSelection();
-        renderer.requestRender();
     })();
 });
 
