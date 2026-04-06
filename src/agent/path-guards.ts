@@ -91,13 +91,11 @@ export async function isBlockedDevicePath(
     }
 
     const posix = path.posix.normalize(resolved);
-    if (
-        posix.startsWith("/dev/") ||
-        posix.startsWith("/proc/") ||
-        posix.startsWith("/sys/") ||
-        posix.startsWith("/run/")
-    ) {
-        return true;
+    const blockedRoots = ["/dev", "/proc", "/sys", "/run"] as const;
+    for (const root of blockedRoots) {
+        if (posix === root || posix.startsWith(`${root}/`)) {
+            return true;
+        }
     }
     return false;
 }
