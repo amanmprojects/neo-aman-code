@@ -1,9 +1,11 @@
+import type {Stats} from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {createPatch} from 'diff';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
+import {isBinaryFile, MAX_FILE_SIZE_BYTES} from '../file-safety';
 import {getEditFileDescription} from './prompt.js';
 
 /**
@@ -104,9 +106,9 @@ export const editFile = tool({
 				};
 			}
 
-			let stat;
+			let stat: Stats;
 			try {
-				stat = await fs.stat(resolved);
+				stat = await fs.lstat(resolved);
 			} catch (error: unknown) {
 				const errorRecord = error as {code?: string};
 				if (errorRecord.code === 'ENOENT') {
@@ -118,6 +120,33 @@ export const editFile = tool({
 
 			if (stat.isDirectory()) {
 				return {error: `Path is a directory, not a file: ${resolved}`};
+			}
+
+			if (stat.isSymbolicLink()) {
+				stat = await fs.stat(resolved);
+			}
+
+			if (!stat.isFile()) {
+				return {
+					error: `Path is not a regular file: ${resolved}. Cannot edit special file types.`,
+				};
+			}
+
+			if (stat.size > MAX_FILE_SIZE_BYTES) {
+				return {
+					error: `File is too large (${(stat.size / 1024).toFixed(
+						1,
+					)}KB) to edit with this tool. Maximum size is ${
+						MAX_FILE_SIZE_BYTES / 1024
+					}KB.`,
+				};
+			}
+
+			const wouldBeBinary = await isBinaryFile(resolved);
+			if (wouldBeBinary) {
+				return {
+					error: `Cannot edit binary file: ${resolved}. This appears to be a binary file.`,
+				};
 			}
 
 			const original = await fs.readFile(resolved, 'utf8');
@@ -180,3 +209,5 @@ export const editFile = tool({
 		}
 	},
 });
+
+export type EditFileToolInvocation = UIToolInvocation<typeof editFile>;

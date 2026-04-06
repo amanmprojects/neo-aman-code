@@ -1,84 +1,14 @@
-import { createReadStream, type Stats } from "node:fs";
+import type { Stats } from "node:fs";
 import * as fp from "node:fs/promises";
 import * as path from "node:path";
 import { tool, type UIToolInvocation } from "ai";
 import { z } from "zod";
 import { isBlockedDevicePath, isUNCPath } from "../../path-guards";
+import {
+    isBinaryFile,
+    MAX_FILE_SIZE_BYTES,
+} from "../file-safety";
 import { getReadFileDescription } from "./prompt";
-
-const MAX_FILE_SIZE_BYTES = 256 * 1024;
-
-const BINARY_EXTENSIONS = new Set([
-    "exe",
-    "dll",
-    "so",
-    "dylib",
-    "bin",
-    "zip",
-    "tar",
-    "gz",
-    "bz2",
-    "xz",
-    "7z",
-    "rar",
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "webp",
-    "bmp",
-    "ico",
-    "pdf",
-    "doc",
-    "docx",
-    "xls",
-    "xlsx",
-    "ppt",
-    "pptx",
-    "mp3",
-    "mp4",
-    "avi",
-    "mov",
-    "wav",
-    "flac",
-    "ogg",
-    "wasm",
-    "class",
-    "jar",
-    "o",
-    "a",
-]);
-
-function hasBinaryExtension(filePath: string): boolean {
-    const ext = path.extname(filePath).toLowerCase().slice(1);
-    return BINARY_EXTENSIONS.has(ext);
-}
-
-async function isBinaryFile(filePath: string): Promise<boolean> {
-    if (hasBinaryExtension(filePath)) return true;
-
-    try {
-        const buffer = Buffer.alloc(8192);
-        const stream = createReadStream(filePath, { start: 0, end: 8191 });
-        let bytesRead = 0;
-
-        for await (const chunk of stream) {
-            const buf = chunk as Buffer;
-            const toCopy = Math.min(buf.length, buffer.length - bytesRead);
-            buf.copy(buffer, bytesRead, 0, toCopy);
-            bytesRead += toCopy;
-            if (bytesRead >= buffer.length) break;
-        }
-
-        for (let i = 0; i < bytesRead; i++) {
-            if (buffer[i] === 0) return true;
-        }
-    } catch {
-        // If we can't read, assume it's not binary and let text reading fail naturally
-    }
-
-    return false;
-}
 
 async function findSimilarFiles(
     targetPath: string,
@@ -145,12 +75,18 @@ export const readFile = tool({
             .describe("Absolute or relative path to the file to read"),
         offset: z
             .number()
+            .int()
+            .min(1)
             .optional()
             .describe("1-indexed line number to start reading from"),
         limit: z
             .number()
+            .int()
+            .min(1)
             .optional()
-            .describe("Number of lines to read from the offset"),
+            .describe(
+                "Max number of lines to return. With offset, counts from that line; with offset omitted, reads the first N lines.",
+            ),
     }),
     // needsApproval: true,
     async execute({ filePath, offset, limit }) {
@@ -213,9 +149,9 @@ export const readFile = tool({
                 return {
                     error: `File is too large (${(stat.size / 1024).toFixed(
                         1,
-                    )}KB) to read at once. Maximum size is ${
+                    )}KB) to read with this tool. Maximum size is ${
                         MAX_FILE_SIZE_BYTES / 1024
-                    }KB. Use offset and limit to read specific portions.`,
+                    }KB. Use a smaller file or inspect it outside the agent.`,
                 };
             }
 
@@ -226,7 +162,8 @@ export const readFile = tool({
                 };
             }
 
-            const content = await fp.readFile(resolved, "utf8");
+            const raw = await fp.readFile(resolved, "utf8");
+            const content = raw.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
             const lines = content.split("\n");
             const totalLines = lines.length;
 
@@ -244,8 +181,11 @@ export const readFile = tool({
             let startLine = 1;
             let endLine = totalLines;
 
-            if (offset !== undefined) {
-                startLine = Math.max(1, offset);
+            if (limit !== undefined && offset === undefined) {
+                startLine = 1;
+                endLine = Math.min(totalLines, limit);
+            } else if (offset !== undefined) {
+                startLine = offset;
                 if (limit !== undefined) {
                     endLine = Math.min(totalLines, startLine + limit - 1);
                 }
