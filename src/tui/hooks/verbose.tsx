@@ -1,7 +1,7 @@
 import { useKeyboard } from "@opentui/react";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-const VerboseContext = createContext(false);
+const VerboseContext = createContext<boolean | undefined>(undefined);
 
 export function VerboseProvider({ children }: { children: ReactNode }) {
     const [verbose, setVerbose] = useState(false);
@@ -16,5 +16,9 @@ export function VerboseProvider({ children }: { children: ReactNode }) {
 }
 
 export function useVerbose(): boolean {
-    return useContext(VerboseContext);
+    const value = useContext(VerboseContext);
+    if (value === undefined) {
+        throw new Error("useVerbose must be used within VerboseProvider");
+    }
+    return value;
 }
