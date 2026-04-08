@@ -1,10 +1,10 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { DEFAULT_MODEL } from "../../agent/providers";
+import { AGENT_MODEL_LABEL } from "../../agent/modelLabel";
 
-const ModelNameContext = createContext<string>(DEFAULT_MODEL);
+const ModelNameContext = createContext<string>(AGENT_MODEL_LABEL);
 
 export function ModelNameProvider({
-    modelName = DEFAULT_MODEL,
+    modelName = AGENT_MODEL_LABEL,
     children,
 }: {
     modelName?: string;

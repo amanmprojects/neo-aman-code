@@ -25,9 +25,6 @@ export const MODEL_LIST: LanguageModel[] = [
     MODEL_ID_AGENT,
 ];
 
-/** String for TUI labels; matches the model index used by `ToolLoopAgent` in `agent/index.ts`. */
-export const DEFAULT_UI_MODEL_NAME = MODEL_ID_AGENT;
-
 const defaultModel = MODEL_LIST[0]
 if (defaultModel === undefined) {
     throw new Error('MODEL_LIST must contain at least one model')
