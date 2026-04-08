@@ -11,6 +11,12 @@ import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
 import { WriteFileToolBlock } from "./tools/WriteFileToolBlock";
 import { EditFileToolBlock } from "./tools/EditFileToolBlock";
 import { BashToolBlock } from "./tools/BashToolBlock";
+import {
+    TaskCreateToolBlock,
+    TaskGetToolBlock,
+    TaskListToolBlock,
+    TaskUpdateToolBlock,
+} from "./tools/TaskToolBlocks";
 import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
@@ -106,6 +112,14 @@ export function AssistantMessage({
                         return <GrepSearchToolBlock key={key} invocation={part} />;
                     case "tool-bashTool":
                         return <BashToolBlock key={key} invocation={part} />;
+                    case "tool-taskCreate":
+                        return <TaskCreateToolBlock key={key} invocation={part} />;
+                    case "tool-taskGet":
+                        return <TaskGetToolBlock key={key} invocation={part} />;
+                    case "tool-taskList":
+                        return <TaskListToolBlock key={key} invocation={part} />;
+                    case "tool-taskUpdate":
+                        return <TaskUpdateToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

@@ -108,7 +108,7 @@ export function EditFileToolBlock({ invocation }: { invocation: EditFileToolInvo
                 <AssistantToolFrame border={["left"]}>
                     <box flexDirection="column" gap={1} minWidth={0} width="100%">
                         <text fg={theme.muted}>
-                            editFile — {fp} ({ra})
+                            editFile — {fp} ({ra}, preview only; line ending may differ from applied diff)
                         </text>
                         <EditFileDiffView filePath={fp} patch={patch} />
                     </box>
