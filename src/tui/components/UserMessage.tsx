@@ -10,6 +10,7 @@ function UserTextPart({ part }: { part: TextUIPart }) {
             border={["left"]}
             backgroundColor={theme.stripBar}
             paddingY={1}
+            borderStyle="heavy"
         >
 
             <text fg={theme.text}>{part.text}</text>

@@ -1,7 +1,7 @@
 import type {
     TavilyExtractToolInvocation,
     TavilySearchToolInvocation,
-} from "../../../agent/tools/tavily";
+} from "../../../agent/tools/tavily/tavily";
 import { useVerbose } from "../../hooks/verbose";
 import { theme } from "../../theme";
 import { MessageFrame } from "../MessageFrame";

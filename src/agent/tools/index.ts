@@ -1,14 +1,18 @@
 import type { ToolSet } from "ai";
-import { bash } from "./bash-tool";
+import { bashTool } from "./bash-tool";
 import { editFile } from "./edit-file";
 import { listDir } from "./list-dir";
 import { readFile } from "./read-file";
-import { createTavilyTools } from "./tavily";
+import { createTavilyTools } from "./tavily/tavily";
+import { globSearch } from "./glob-search";
+import { grepSearch } from "./grep-search";
 
 export const toolSet = {
     listDir,
     readFile,
     editFile,
-    bash,
     ...createTavilyTools(),
+    bashTool,
+    globSearch,
+    grepSearch,
 } as ToolSet;
