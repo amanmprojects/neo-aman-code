@@ -1,6 +1,7 @@
 import { ToolLoopAgent, type InferAgentUIMessage } from "ai";
 import { toolSet } from "./tools";
 import { AGENT_MODEL } from "./modelLabel";
+import { stepCountIs } from "ai";
 
 function sanitizePromptPath(filePath: string): string {
     return filePath.replace(/[\u0000-\u001f\u007f]+/g, "");
@@ -17,6 +18,7 @@ Always pass absolute paths to tools. If a tool returns an absolute path, reuse i
 
 When using tools, multiple tool calls in the same assistant turn run concurrently (in parallel), not in the order they appear. If one tool depends on another having finished first, you must split them across separate turns: complete the first tool call, wait for its result, then invoke the dependent tool in a later step.
 Example: do not call writeFile and editFile on the same path in one turn—editFile may run before the file exists and fail with "File not found". First call writeFile and receive success; only then call editFile in a subsequent step.`,
+    stopWhen: stepCountIs(100),
 });
 
 type AgentUIMessage = InferAgentUIMessage<typeof agent>;
