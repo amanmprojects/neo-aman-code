@@ -7,11 +7,11 @@ export function getGrepSearchDescription(): string {
 	return `A powerful search tool built on ripgrep
 
 Usage:
-- ALWAYS use grepSearch for search tasks. NEVER invoke \`grep\` or \`rg\` as an executeCommand command. The grepSearch tool has been optimized for correct permissions and access.
+- ALWAYS use grepSearch for search tasks. NEVER invoke `grep` or `rg` via `bashTool`. The grepSearch tool has been optimized for correct permissions and access.
 - Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
 - Filter files with includes parameter (e.g., "*.js", "**/*.tsx") or type parameter (e.g., "js", "py", "rust")
 - Output modes: "content" shows matching lines, "files_with_matches" shows only file paths (default), "count" shows match counts
-- Use the Agent tool for open-ended searches requiring multiple rounds
+- For open-ended searches, make multiple grepSearch calls and refine the pattern or filters between calls
 - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use \`interface\\{}\` to find \`interface{}\` in Go code)
 - Multiline matching: By default patterns match within single lines only. For cross-line patterns, use \`multiline: true\`
 - Use context, contextBefore, contextAfter to show lines around matches
