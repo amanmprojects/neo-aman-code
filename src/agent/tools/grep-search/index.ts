@@ -1,10 +1,11 @@
-import {execFile} from 'node:child_process';
+import {spawn} from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import {createInterface} from 'node:readline';
 import {z} from 'zod';
 import {tool, type UIToolInvocation} from 'ai';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
-import {applyHeadLimit} from '../../utils/head-limit.js';
+import {applyHeadLimit, getPreStatLimit} from '../../utils/head-limit.js';
 import {getGrepSearchDescription} from './prompt.js';
 
 const VCS_DIRECTORIES_TO_EXCLUDE = [
@@ -46,6 +47,16 @@ type ParsedRipgrepRecord = {
 	submatchCount: number;
 };
 
+type RipgrepRunResult = {
+	exitCode: number | null;
+	signal: NodeJS.Signals | null;
+	stderr: string;
+	stoppedEarly: boolean;
+};
+
+const RIPGREP_TIMEOUT_MS = 30_000;
+const RIPGREP_STDERR_LIMIT = 32_000;
+
 function formatLimitInfo(
 	appliedLimit: number | undefined,
 	appliedOffset: number | undefined,
@@ -62,30 +73,122 @@ function formatLimitInfo(
 	return parts.join(', ');
 }
 
-async function execFileAsync(
-	command: string,
-	args: string[],
-	options: {cwd?: string; timeout?: number; maxBuffer?: number},
-): Promise<{stdout: string; stderr: string}> {
+class RipgrepSpawnError extends Error {
+	code?: string;
+	path?: string;
+
+	constructor(error: NodeJS.ErrnoException) {
+		super(error.message);
+		this.name = 'RipgrepSpawnError';
+		this.code = error.code;
+		this.path = error.path;
+	}
+}
+
+function appendBoundedText(current: string, chunk: string, limit: number): string {
+	if (current.length >= limit) {
+		return current;
+	}
+
+	const remaining = limit - current.length;
+	if (chunk.length <= remaining) {
+		return current + chunk;
+	}
+
+	return current + chunk.slice(0, remaining);
+}
+
+async function runRipgrep(args: string[], options: {
+	cwd?: string;
+	onStdoutLine?: (line: string, controls: {stop: () => void}) => void;
+}): Promise<RipgrepRunResult> {
 	return new Promise((resolve, reject) => {
-		execFile(
-			command,
-			args,
-			{
-				cwd: options.cwd,
-				timeout: options.timeout,
-				maxBuffer: options.maxBuffer,
-				encoding: 'utf-8',
-			},
-			(error, stdout, stderr) => {
-				if (error && error.code !== 1) {
-					reject(error);
-				} else {
-					resolve({stdout: stdout || '', stderr: stderr || ''});
+		const child = spawn('rg', args, {
+			cwd: options.cwd,
+			stdio: ['ignore', 'pipe', 'pipe'],
+		});
+		const stdoutReader = createInterface({
+			input: child.stdout,
+			crlfDelay: Number.POSITIVE_INFINITY,
+		});
+		let settled = false;
+		let timedOut = false;
+		let stoppedEarly = false;
+		let stderr = '';
+
+		const finish = (callback: () => void) => {
+			if (settled) {
+				return;
+			}
+
+			settled = true;
+			clearTimeout(timeoutId);
+			stdoutReader.close();
+			callback();
+		};
+
+		const stop = () => {
+			if (stoppedEarly) {
+				return;
+			}
+
+			stoppedEarly = true;
+			child.kill('SIGTERM');
+		};
+
+		stdoutReader.on('line', line => {
+			options.onStdoutLine?.(line, {stop});
+		});
+
+		child.stderr.setEncoding('utf8');
+		child.stderr.on('data', (chunk: string) => {
+			stderr = appendBoundedText(stderr, chunk, RIPGREP_STDERR_LIMIT);
+		});
+
+		child.on('error', error => {
+			finish(() => reject(new RipgrepSpawnError(error)));
+		});
+
+		child.on('close', (exitCode, signal) => {
+			finish(() => {
+				if (timedOut) {
+					reject(
+						new Error(
+							`ripgrep timed out after ${RIPGREP_TIMEOUT_MS / 1000} seconds`,
+						),
+					);
+					return;
 				}
-			},
-		);
+
+				resolve({
+					exitCode,
+					signal,
+					stderr: stderr.trimEnd(),
+					stoppedEarly,
+				});
+			});
+		});
+
+		const timeoutId = setTimeout(() => {
+			timedOut = true;
+			child.kill('SIGTERM');
+		}, RIPGREP_TIMEOUT_MS);
+		timeoutId.unref();
 	});
+}
+
+function ensureRipgrepSucceeded(result: RipgrepRunResult): void {
+	if (result.stoppedEarly) {
+		return;
+	}
+
+	if (result.exitCode === 0 || result.exitCode === 1) {
+		return;
+	}
+
+	throw new Error(
+		result.stderr || `ripgrep exited with code ${String(result.exitCode)}`,
+	);
 }
 
 function decodeRipgrepText(field: RipgrepTextField | undefined): string {
@@ -144,19 +247,23 @@ function parseRipgrepRecords(stdout: string): ParsedRipgrepRecord[] {
 function formatRipgrepLine(
 	record: ParsedRipgrepRecord,
 	showLineNumbers: boolean,
-): string {
+): string[] {
 	const displayPath = record.filePath;
-	const lineText = record.text.replace(/[\r\n]+$/, '');
+	const trimmedText = record.text.replace(/[\r\n]+$/, '');
+	const lineTexts =
+		trimmedText === '' ? [''] : trimmedText.split(/\r\n|\n|\r/g);
 
-	if (
-		showLineNumbers &&
-		record.lineNumber !== undefined &&
-		record.lineNumber !== null
-	) {
-		return `${displayPath}:${record.lineNumber}:${lineText}`;
-	}
+	return lineTexts.map(lineText => {
+		if (
+			showLineNumbers &&
+			record.lineNumber !== undefined &&
+			record.lineNumber !== null
+		) {
+			return `${displayPath}:${record.lineNumber}:${lineText}`;
+		}
 
-	return `${displayPath}:${lineText}`;
+		return `${displayPath}:${lineText}`;
+	});
 }
 
 function searchPathError(targetPath: string, kind: 'unc' | 'device') {
@@ -360,6 +467,8 @@ export const grepSearch = tool({
 
 			if (outputMode === 'files_with_matches') {
 				args.push('-l');
+			} else if (outputMode === 'count') {
+				args.push('--count-matches', '--with-filename');
 			} else {
 				args.push('--json');
 			}
@@ -398,19 +507,40 @@ export const grepSearch = tool({
 
 			args.push(resolved);
 
-			const {stdout} = await execFileAsync('rg', args, {
-				timeout: 30_000,
-				maxBuffer: 10 * 1024 * 1024,
-			});
-
 			if (outputMode === 'content') {
-				const records = parseRipgrepRecords(stdout);
-				const totalMatchCount = records
-					.filter(record => record.type === 'match')
-					.reduce((sum, record) => sum + record.submatchCount, 0);
-				const formattedLines = records.map(record =>
-					formatRipgrepLine(record, showLineNumbers),
-				);
+				const collectionLimit = getPreStatLimit(headLimit, offset);
+				const maxCollectedLines =
+					collectionLimit === undefined ? undefined : collectionLimit + 1;
+				const formattedLines: string[] = [];
+				let totalMatchCount = 0;
+
+				const ripgrepResult = await runRipgrep(args, {
+					onStdoutLine: (line, controls) => {
+						if (!line.trim()) {
+							return;
+						}
+
+						const records = parseRipgrepRecords(line);
+						for (const record of records) {
+							if (record.type === 'match') {
+								totalMatchCount += record.submatchCount;
+							}
+
+							formattedLines.push(
+								...formatRipgrepLine(record, showLineNumbers),
+							);
+
+							if (
+								maxCollectedLines !== undefined &&
+								formattedLines.length >= maxCollectedLines
+							) {
+								controls.stop();
+								return;
+							}
+						}
+					},
+				});
+				ensureRipgrepSucceeded(ripgrepResult);
 				const {
 					items: limitedLines,
 					appliedLimit,
@@ -427,7 +557,7 @@ export const grepSearch = tool({
 					outputMode,
 					matchCount: totalMatchCount,
 					matches: limitedLines,
-					truncated: wasTruncated,
+					truncated: wasTruncated || ripgrepResult.stoppedEarly,
 					content: limitedLines.join('\n') || 'No matches found',
 					numLines: limitedLines.length,
 					...(appliedLimit !== undefined && {appliedLimit}),
@@ -437,17 +567,25 @@ export const grepSearch = tool({
 			}
 
 			if (outputMode === 'count') {
-				const matchRecords = parseRipgrepRecords(stdout).filter(
-					record => record.type === 'match',
-				);
 				const countsByFile = new Map<string, number>();
+				const ripgrepResult = await runRipgrep(args, {
+					onStdoutLine: line => {
+						const separator = line.lastIndexOf(':');
+						if (separator <= 0) {
+							return;
+						}
 
-				for (const record of matchRecords) {
-					countsByFile.set(
-						record.filePath,
-						(countsByFile.get(record.filePath) ?? 0) + record.submatchCount,
-					);
-				}
+						const filePath = line.slice(0, separator);
+						const countText = line.slice(separator + 1).trim();
+						const totalMatchesForFile = Number.parseInt(countText, 10);
+						if (!Number.isFinite(totalMatchesForFile)) {
+							return;
+						}
+
+						countsByFile.set(filePath, totalMatchesForFile);
+					},
+				});
+				ensureRipgrepSucceeded(ripgrepResult);
 
 				const countLines = [...countsByFile].map(
 					([filePath, totalMatchesForFile]) =>
@@ -483,7 +621,15 @@ export const grepSearch = tool({
 				};
 			}
 
-			const lines = stdout.trim().split('\n').filter(Boolean);
+			const lines: string[] = [];
+			const ripgrepResult = await runRipgrep(args, {
+				onStdoutLine: line => {
+					if (line) {
+						lines.push(line);
+					}
+				},
+			});
+			ensureRipgrepSucceeded(ripgrepResult);
 			const stats = await Promise.allSettled(
 				lines.map(async (filePath: string) => fs.stat(filePath)),
 			);
