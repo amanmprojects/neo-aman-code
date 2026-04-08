@@ -372,6 +372,8 @@ export const bashTool = tool({
 			let stdoutTruncated = false;
 			let stderrTruncated = false;
 			let timedOut = false;
+			let timeoutId: ReturnType<typeof setTimeout> | undefined;
+			let killAfterTimeout: ReturnType<typeof setTimeout> | undefined;
 
 			// Use execa with streaming for bounded output
 			const subprocess = execa(command, [], {
@@ -379,15 +381,47 @@ export const bashTool = tool({
 				buffer: false, // Don't buffer, we'll handle it
 			});
 
-			const timeoutHandler = () => {
-				timedOut = true;
-				if (subprocess.pid) {
-					treeKill(subprocess.pid, 'SIGTERM');
+			const clearProcessTimers = () => {
+				if (timeoutId) {
+					clearTimeout(timeoutId);
+					timeoutId = undefined;
+				}
+				if (killAfterTimeout) {
+					clearTimeout(killAfterTimeout);
+					killAfterTimeout = undefined;
 				}
 			};
 
+			const getRunningPid = () => {
+				if (
+					subprocess.pid === undefined ||
+					subprocess.exitCode !== null ||
+					subprocess.signalCode !== null
+				) {
+					return undefined;
+				}
+				return subprocess.pid;
+			};
+
+			const timeoutHandler = () => {
+				timedOut = true;
+				const pid = getRunningPid();
+				if (pid === undefined) {
+					return;
+				}
+				treeKill(pid, 'SIGTERM');
+				killAfterTimeout = setTimeout(() => {
+					killAfterTimeout = undefined;
+					const runningPid = getRunningPid();
+					if (runningPid !== undefined) {
+						treeKill(runningPid, 'SIGKILL');
+					}
+				}, 5_000);
+				killAfterTimeout.unref();
+			};
+
 			// Handle timeout manually for better control
-			const timeoutId = setTimeout(timeoutHandler, timeoutMs);
+			timeoutId = setTimeout(timeoutHandler, timeoutMs);
 
 			// Unref the timeout so it doesn't block the event loop
 			timeoutId.unref();
@@ -413,7 +447,7 @@ export const bashTool = tool({
 				// Wait for process to complete
 				result = await subprocess;
 			} finally {
-				clearTimeout(timeoutId);
+				clearProcessTimers();
 			}
 
 			const exitCode =
