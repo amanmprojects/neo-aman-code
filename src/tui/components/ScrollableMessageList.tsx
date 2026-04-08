@@ -3,6 +3,7 @@ import type { ScrollAcceleration } from "@opentui/core";
 import { theme } from "../theme";
 import { UserMessage } from "./UserMessage";
 import { AssistantMessage } from "./AssistantMessage";
+import { AssistantMessageFrame } from "./MessageFrames";
 import { MessageFrame } from "./MessageFrame";
 import { useChatSessionStatus } from "../hooks/chatSession";
 import { useModelName } from "../hooks/modelName";
@@ -92,12 +93,12 @@ export function ScrollableMessageList({
                     );
                 })}
 
-                <MessageFrame border={['left']} borderColor={theme.bg}>
+                <AssistantMessageFrame>
                     <text fg={theme.text}>
                         <span fg={theme.accent}>▣</span>
                         {` Build · ${modelName}`}
                     </text>
-                </MessageFrame>
+                </AssistantMessageFrame>
             </box>
         </scrollbox>
     );

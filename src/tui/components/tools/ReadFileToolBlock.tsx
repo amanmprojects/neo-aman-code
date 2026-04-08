@@ -1,7 +1,7 @@
 import type { ReadFileToolInvocation } from "../../../agent/tools/read-file";
 import { useVerbose } from "../../hooks/verbose";
 import { theme } from "../../theme";
-import { MessageFrame } from "../MessageFrame";
+import { AssistantToolFrame } from "../MessageFrames";
 
 const MAX_CONTENT_LINES = 10;
 
@@ -36,45 +36,45 @@ export function ReadFileToolBlock({ invocation }: { invocation: ReadFileToolInvo
     switch (invocation.state) {
         case "input-streaming":
             return (
-                <MessageFrame border={false} >
+                <AssistantToolFrame border={false} >
                     <text fg={theme.muted}>Reading file…</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "input-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel} borderStyle="heavy" >
+                <AssistantToolFrame border={["left"]} >
                     <text fg={theme.muted}>Reading File: {invocation.input.filePath}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel} borderStyle="heavy" >
+                <AssistantToolFrame border={["left"]} >
                     <text fg={theme.muted}>Read File: {formatReadFileOutput(invocation.output, verbose)}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-error":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel} borderStyle="heavy" >
+                <AssistantToolFrame border={["left"]} >
                     <text fg={theme.muted}>Read File — error: {invocation.errorText}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-requested":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>Read File — approval requested (not configured in this client)</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-responded":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>Read File — approval responded</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         default:
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>Read File — unknown state</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
     }
 }

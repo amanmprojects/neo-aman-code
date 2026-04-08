@@ -1,10 +1,13 @@
-import { theme } from "../theme";
 import type { ReasoningUIPart, TextUIPart } from "ai";
 import type { AgentUIMessage } from "../../agent";
+import { theme } from "../theme";
+import { AssistantMessageFrame, AssistantReasoningFrame } from "./MessageFrames";
 import { MessageFrame } from "./MessageFrame";
 import { syntaxStyleForAssistantMarkdown } from "../assistantMarkdown";
 import { ListDirToolBlock } from "./tools/ListDirToolBlock";
 import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
+import { GlobSearchToolBlock } from "./tools/GlobSearchToolBlock";
+import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
 import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
@@ -18,13 +21,13 @@ function AssistantReasoningPart({
     streaming: boolean;
 }) {
     return (
-        <MessageFrame borderColor={theme.panel} border={["left"]} borderStyle="heavy">
+        <AssistantReasoningFrame>
             <markdown
                 content={part.text}
                 syntaxStyle={markdownSyntaxReasoning}
                 streaming={streaming}
             />
-        </MessageFrame>
+        </AssistantReasoningFrame>
     );
 }
 
@@ -36,13 +39,13 @@ function AssistantTextPart({
     streaming: boolean;
 }) {
     return (
-        <MessageFrame border={["left"]} borderColor={theme.bg}>
+        <AssistantMessageFrame>
             <markdown
                 content={part.text}
                 syntaxStyle={markdownSyntaxBody}
                 streaming={streaming}
             />
-        </MessageFrame>
+        </AssistantMessageFrame>
     );
 }
 
@@ -90,6 +93,10 @@ export function AssistantMessage({
                         return <TavilySearchToolBlock key={key} invocation={part} />;
                     case "tool-tavilyExtract":
                         return <TavilyExtractToolBlock key={key} invocation={part} />;
+                    case "tool-globSearch":
+                        return <GlobSearchToolBlock key={key} invocation={part} />;
+                    case "tool-grepSearch":
+                        return <GrepSearchToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

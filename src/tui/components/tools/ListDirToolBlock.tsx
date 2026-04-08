@@ -1,7 +1,7 @@
 import type { ListDirToolInvocation } from "../../../agent/tools/list-dir";
 import { useVerbose } from "../../hooks/verbose";
 import { theme } from "../../theme";
-import { MessageFrame } from "../MessageFrame";
+import { AssistantToolFrame } from "../MessageFrames";
 
 function formatListDirOutput(
     output: NonNullable<ListDirToolInvocation["output"]>,
@@ -30,47 +30,47 @@ export function ListDirToolBlock({ invocation }: { invocation: ListDirToolInvoca
     switch (invocation.state) {
         case "input-streaming":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>listDir — reading arguments…</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "input-available": {
             const path = invocation.input.path ?? "(cwd)";
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>listDir — {path}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         }
         case "output-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>{formatListDirOutput(invocation.output, verbose)}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-error":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>listDir — error: {invocation.errorText}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-requested":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>listDir — approval requested (not configured in this client)</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-responded":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>listDir — approval responded</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         default:
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>listDir — unknown state</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
     }
 }

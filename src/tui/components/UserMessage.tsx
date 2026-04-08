@@ -1,29 +1,21 @@
 import type { TextUIPart } from "ai";
 import type { AgentUIMessage } from "../../agent";
 import { theme } from "../theme";
-import { MessageFrame } from "./MessageFrame";
+import { UserMessageFrame } from "./MessageFrames";
 
 function UserTextPart({ part }: { part: TextUIPart }) {
     return (
-        <MessageFrame
-            borderColor={theme.accent}
-            border={["left"]}
-            backgroundColor={theme.stripBar}
-            paddingY={1}
-            borderStyle="heavy"
-        >
-
+        <UserMessageFrame>
             <text fg={theme.text}>{part.text}</text>
-
-        </MessageFrame>
+        </UserMessageFrame>
     );
 }
 
 function UserUnknownPart({ part }: { part: AgentUIMessage["parts"][number] }) {
     return (
-        <MessageFrame borderColor={theme.accent}>
+        <UserMessageFrame variant="unknown">
             <text fg={theme.muted}>Unknown part type: {part.type}</text>
-        </MessageFrame>
+        </UserMessageFrame>
     );
 }
 

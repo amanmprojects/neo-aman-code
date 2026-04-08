@@ -4,7 +4,7 @@ import type {
 } from "../../../agent/tools/tavily/tavily";
 import { useVerbose } from "../../hooks/verbose";
 import { theme } from "../../theme";
-import { MessageFrame } from "../MessageFrame";
+import { AssistantToolFrame } from "../MessageFrames";
 
 const MAX_RESULT_LINES = 6;
 const MAX_BODY_LINES = 4;
@@ -55,47 +55,47 @@ export function TavilySearchToolBlock({ invocation }: { invocation: TavilySearch
     switch (invocation.state) {
         case "input-streaming":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilySearch — reading arguments…</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "input-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>
                         tavilySearch — query: {invocation.input.query}
                     </text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>{formatSearchOutput(invocation.output, verbose)}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-error":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>tavilySearch — error: {invocation.errorText}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-requested":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilySearch — approval requested</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-responded":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilySearch — approval responded</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         default:
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilySearch — unknown state</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
     }
 }
@@ -133,50 +133,50 @@ export function TavilyExtractToolBlock({ invocation }: { invocation: TavilyExtra
     switch (invocation.state) {
         case "input-streaming":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilyExtract — reading arguments…</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "input-available": {
             const urls = invocation.input.urls ?? [];
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>
                         tavilyExtract — {urls.length} URL(s) · {urls[0] ?? ""}
                         {urls.length > 1 ? " …" : ""}
                     </text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         }
         case "output-available":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>{formatExtractOutput(invocation.output, verbose)}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "output-error":
             return (
-                <MessageFrame border={["left"]} borderColor={theme.panel}>
+                <AssistantToolFrame border={["left"]}>
                     <text fg={theme.muted}>tavilyExtract — error: {invocation.errorText}</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-requested":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilyExtract — approval requested</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         case "approval-responded":
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilyExtract — approval responded</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
         default:
             return (
-                <MessageFrame border={false}>
+                <AssistantToolFrame border={false}>
                     <text fg={theme.muted}>tavilyExtract — unknown state</text>
-                </MessageFrame>
+                </AssistantToolFrame>
             );
     }
 }
