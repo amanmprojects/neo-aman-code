@@ -14,7 +14,7 @@ export function getReadFileDescription(): string {
 Assume this tool is able to read all files on the machine. If the User provides a path to a file assume that path is valid. It is okay to read a file that does not exist; an error will be returned.
 
 Usage:
-- The filePath parameter must be an absolute path, not a relative path
+- The filePath parameter must be an absolute path, not a relative path. Relative inputs may be resolved against the current working directory for compatibility, but you should always send an absolute path.
 - By default, it reads up to ${maxLinesToRead} lines starting from the beginning of the file
 - You can optionally specify a line offset and limit (especially handy for long files), but it's recommended to read the whole file by not providing these parameters
 - Results are returned using cat -n format, with line numbers starting at 1

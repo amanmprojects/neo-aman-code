@@ -1,5 +1,5 @@
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
@@ -64,19 +64,6 @@ function globToRegExp(pattern: string): RegExp {
 	}
 
 	return new RegExp(`${expression}$`);
-}
-
-function toDisplayPath(filePath: string): string {
-	const relativePath = path.relative(process.cwd(), filePath);
-	if (
-		!relativePath ||
-		relativePath.startsWith('..') ||
-		path.isAbsolute(relativePath)
-	) {
-		return filePath;
-	}
-
-	return relativePath.split(path.sep).join('/');
 }
 
 /**
@@ -215,12 +202,14 @@ export const globSearch = tool({
 			.string()
 			.optional()
 			.describe(
-				'The directory to search in. If omitted, the current working directory is used.',
+				'Absolute directory path to search in. If omitted, the current working directory absolute path is used. Relative inputs are resolved for compatibility but should not be used intentionally.',
 			),
 		searchPath: z
 			.string()
 			.optional()
-			.describe('Deprecated alias for path. The directory to search within.'),
+			.describe(
+				'Deprecated alias for path. Use an absolute directory path. Relative inputs are resolved for compatibility but should not be used intentionally.',
+			),
 		type: z
 			.enum(['file', 'directory', 'any'])
 			.optional()
@@ -335,9 +324,7 @@ export const globSearch = tool({
 			const truncated = includeTotalMatches
 				? offset + pagedMatches.length < matches.length
 				: matches.length >= offset + limit;
-			const filenames = pagedMatches.map(match =>
-				toDisplayPath(match.filePath),
-			);
+			const filenames = pagedMatches.map(match => match.filePath);
 
 			return {
 				pattern,
@@ -351,9 +338,7 @@ export const globSearch = tool({
 				numFiles: filenames.length,
 				...(includeTotalMatches ? {totalMatches: matches.length} : {}),
 				filenames,
-				resultCount: filenames.length,
 				truncated,
-				results: filenames,
 			};
 		} catch (error: unknown) {
 			const msg =

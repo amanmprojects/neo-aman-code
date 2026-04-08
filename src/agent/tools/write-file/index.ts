@@ -10,7 +10,9 @@ export const writeFile = tool({
 	inputSchema: z.object({
 		filePath: z
 			.string()
-			.describe('Absolute or relative path to the file to write'),
+			.describe(
+				'Absolute path to the file to write. Relative inputs are resolved against the current working directory for compatibility but should not be used intentionally.',
+			),
 		content: z.string().describe('The full content to write to the file'),
 		overwrite: z
 			.boolean()
@@ -60,7 +62,7 @@ export const writeFile = tool({
 				throw error instanceof Error ? error : new Error(String(error));
 			}
 
-			const lines = content.split('\n').length;
+			const lines = content === '' ? 0 : content.split('\n').length;
 			return {
 				filePath: resolved,
 				action: overwrite ? 'written' : 'created',
@@ -68,8 +70,9 @@ export const writeFile = tool({
 				lines,
 				bytes: Buffer.byteLength(content, 'utf-8'),
 			};
-		} catch (error: any) {
-			return {error: `Failed to write file: ${error.message}`};
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			return {error: `Failed to write file: ${message}`};
 		}
 	},
 });

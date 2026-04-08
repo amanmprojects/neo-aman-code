@@ -14,7 +14,9 @@ function formatGlobOutput(
         const total =
             "totalMatches" in output && typeof output.totalMatches === "number"
                 ? output.totalMatches
-                : output.resultCount;
+                : typeof output.numFiles === "number"
+                  ? output.numFiles
+                  : 0;
         return `globSearch — ${output.pattern} @ ${output.path} — ${total} match${total === 1 ? "" : "es"}${output.truncated ? " (truncated)" : ""}`;
     }
     const lines = [

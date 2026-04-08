@@ -4,7 +4,6 @@ export const executeCommandToolName = 'executeCommand';
 export const defaultTimeoutSeconds = 10 * 60;
 /** Maximum allowed timeout (30 minutes). */
 export const maxTimeoutSeconds = 30 * 60;
-export const DEFAULT_TIMEOUT_SECONDS = defaultTimeoutSeconds;
 
 /**
  * Renders the executeCommand tool description with detailed usage instructions.
@@ -23,6 +22,7 @@ While the executeCommand tool can do similar things, it's better to use the buil
 
 Usage:
 - The working directory persists between commands, but shell state does not. The shell environment is initialized from the user's profile (bash or zsh).
+- Always use absolute paths for commands and for the optional cwd parameter. If cwd is omitted, the tool uses the current working directory absolute path.
 - If your command will create new directories or files, first use this tool to run ls to verify the parent directory exists and is the correct location.
 - Always quote file paths that contain spaces with double quotes in your command (e.g., cd "path with spaces/file.txt")
 - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of cd. You may use cd if the User explicitly requests it.

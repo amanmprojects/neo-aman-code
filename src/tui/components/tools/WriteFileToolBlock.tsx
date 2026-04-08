@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { createPatch } from "diff";
+import { createTwoFilesPatch } from "diff";
 import type { WriteFileToolInvocation } from "../../../agent/tools/write-file";
 import { theme } from "../../theme";
 import { AssistantToolFrame } from "../MessageFrames";
@@ -48,10 +48,18 @@ function filetypeForPath(filePath: string): string | undefined {
 }
 
 function writeFilePatch(filePath: string, content: string): string {
-    const name = path.basename(filePath) || "file";
-    return createPatch(name, "", content, `a/${name}`, `b/${name}`, {
+    const normalizedPath = filePath || "file";
+    return createTwoFilesPatch(
+        `a/${normalizedPath.replaceAll("\\", "/").replace(/^\/+/, "")}`,
+        `b/${normalizedPath.replaceAll("\\", "/").replace(/^\/+/, "")}`,
+        "",
+        content,
+        "original",
+        "modified",
+        {
         context: FULL_DIFF_CONTEXT,
-    });
+        },
+    );
 }
 
 function WriteFileDiffView({ filePath, content }: { filePath: string; content: string }) {

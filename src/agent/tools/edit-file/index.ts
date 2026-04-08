@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
-import {createPatch} from 'diff';
+import {createTwoFilesPatch} from 'diff';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
 import {isBinaryFile, MAX_FILE_SIZE_BYTES} from '../file-safety';
 import {getEditFileDescription} from './prompt.js';
@@ -63,12 +63,18 @@ function countOccurrences(content: string, search: string): number {
 	}
 }
 
+function toPatchPath(filePath: string, prefix: 'a' | 'b'): string {
+	return `${prefix}/${filePath.replaceAll('\\', '/').replace(/^\/+/, '')}`;
+}
+
 export const editFile = tool({
 	description: getEditFileDescription(),
 	inputSchema: z.object({
 		filePath: z
 			.string()
-			.describe('Absolute or relative path to the file to edit'),
+			.describe(
+				'Absolute path to the file to edit. Relative inputs are resolved against the current working directory for compatibility but should not be used intentionally.',
+			),
 		oldString: z
 			.string()
 			.describe(
@@ -189,10 +195,20 @@ export const editFile = tool({
 				? original.split(normalizedOldString).join(normalizedNewString)
 				: original.replace(normalizedOldString, normalizedNewString);
 
+			const updatedBytes = Buffer.byteLength(updated, 'utf8');
+			if (updatedBytes > MAX_FILE_SIZE_BYTES) {
+				return {
+					error: `Edited file would be too large (${(updatedBytes / 1024).toFixed(
+						1,
+					)}KB). Maximum size is ${MAX_FILE_SIZE_BYTES / 1024}KB.`,
+				};
+			}
+
 			await fs.writeFile(resolved, updated, 'utf8');
 
-			const diff = createPatch(
-				path.basename(resolved),
+			const diff = createTwoFilesPatch(
+				toPatchPath(resolved, 'a'),
+				toPatchPath(resolved, 'b'),
 				original,
 				updated,
 				'original',
@@ -205,8 +221,9 @@ export const editFile = tool({
 				diff,
 				replacedOccurrences: replaceAll ? occurrenceCount : 1,
 			};
-		} catch (error: any) {
-			return {error: `Failed to edit file: ${error.message}`};
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			return {error: `Failed to edit file: ${message}`};
 		}
 	},
 });

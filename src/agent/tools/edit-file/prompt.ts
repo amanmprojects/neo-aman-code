@@ -11,6 +11,7 @@ Usage:
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the oldString or newString.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
 - Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
+- The filePath parameter must be an absolute path, not a relative path. Relative inputs may be resolved against the current working directory for compatibility, but you should always send an absolute path.
 - The edit will FAIL if oldString is not unique in the file. Either provide a larger string with more surrounding context to make it unique or use replaceAll to change every instance of oldString.
 - Use replaceAll for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.
 - CRITICAL REQUIREMENTS:

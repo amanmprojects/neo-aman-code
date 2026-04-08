@@ -12,9 +12,10 @@ export function getGlobSearchDescription(): string {
 - When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead
 
 Usage:
-- The path parameter must be an absolute path, not a relative path (though the results will show relative paths when appropriate)
+- The path parameter must be an absolute path, not a relative path. If omitted, the tool uses the current working directory absolute path.
 - Supports glob patterns with * and ** wildcards
 - Results are sorted by modification time (most recently modified first)
+- Matching file paths are returned as absolute paths
 - Use type parameter to filter for 'file', 'directory', or 'any'
 - Use excludes parameter to provide glob patterns to exclude from the search
 - Use maxDepth parameter to limit recursion depth (0 = direct children only)

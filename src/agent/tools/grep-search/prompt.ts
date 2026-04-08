@@ -17,5 +17,7 @@ Usage:
 - Use context, contextBefore, contextAfter to show lines around matches
 - Results are sorted by modification time when using files_with_matches mode
 - Supports case-sensitive and case-insensitive search
-- Supports fixed string matching (treat pattern as literal instead of regex)`;
+- Supports fixed string matching (treat pattern as literal instead of regex)
+- The path/searchPath parameters should be absolute paths. If omitted, the tool uses the current working directory absolute path.
+- File paths in results are returned as absolute paths`;
 }

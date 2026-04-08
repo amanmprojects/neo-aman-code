@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import {z} from 'zod';
 import {tool, type UIToolInvocation} from 'ai';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
-import {applyHeadLimit, getPreStatLimit} from '../../utils/head-limit.js';
+import {applyHeadLimit} from '../../utils/head-limit.js';
 import {getGrepSearchDescription} from './prompt.js';
 
 const VCS_DIRECTORIES_TO_EXCLUDE = [
@@ -45,19 +45,6 @@ type ParsedRipgrepRecord = {
 	text: string;
 	submatchCount: number;
 };
-
-function toRelativePath(filePath: string): string {
-	const relativePath = path.relative(process.cwd(), filePath);
-	if (
-		!relativePath ||
-		relativePath.startsWith('..') ||
-		path.isAbsolute(relativePath)
-	) {
-		return filePath;
-	}
-
-	return relativePath.split(path.sep).join('/');
-}
 
 function formatLimitInfo(
 	appliedLimit: number | undefined,
@@ -158,8 +145,8 @@ function formatRipgrepLine(
 	record: ParsedRipgrepRecord,
 	showLineNumbers: boolean,
 ): string {
-	const displayPath = toRelativePath(record.filePath);
-	const lineText = record.text.replace(/\n$/, '');
+	const displayPath = record.filePath;
+	const lineText = record.text.replace(/[\r\n]+$/, '');
 
 	if (
 		showLineNumbers &&
@@ -185,6 +172,8 @@ export const grepSearch = tool({
 	inputSchema: z.object({
 		pattern: z
 			.string()
+			.trim()
+			.min(1, 'pattern cannot be blank')
 			.describe(
 				'The regular expression pattern to search for in file contents',
 			),
@@ -192,13 +181,13 @@ export const grepSearch = tool({
 			.string()
 			.optional()
 			.describe(
-				'File or directory to search in. Defaults to current working directory.',
+				'Absolute file or directory path to search in. If omitted, the current working directory absolute path is used. Relative inputs are resolved for compatibility but should not be used intentionally.',
 			),
 		searchPath: z
 			.string()
 			.optional()
 			.describe(
-				'Deprecated alias for path. The directory or file path to search in.',
+				'Deprecated alias for path. Use an absolute file or directory path. Relative inputs are resolved for compatibility but should not be used intentionally.',
 			),
 		glob: z
 			.string()
@@ -306,6 +295,11 @@ export const grepSearch = tool({
 		multiline,
 	}) {
 		try {
+			pattern = pattern.trim();
+			if (pattern === '') {
+				throw new Error('pattern cannot be blank');
+			}
+
 			const targetPath = inputPath ?? searchPath;
 			const resolved = targetPath ? path.resolve(targetPath) : process.cwd();
 
@@ -427,10 +421,10 @@ export const grepSearch = tool({
 					offset > 0 ? offset : undefined,
 				);
 
-				return {
-					pattern,
-					path: toRelativePath(resolved),
-					outputMode,
+					return {
+						pattern,
+						path: resolved,
+						outputMode,
 					matchCount: totalMatchCount,
 					matches: limitedLines,
 					truncated: wasTruncated,
@@ -457,7 +451,7 @@ export const grepSearch = tool({
 
 				const countLines = [...countsByFile].map(
 					([filePath, totalMatchesForFile]) =>
-						`${toRelativePath(filePath)}:${totalMatchesForFile}`,
+						`${filePath}:${totalMatchesForFile}`,
 				);
 				const {
 					items: limitedLines,
@@ -473,10 +467,10 @@ export const grepSearch = tool({
 					offset > 0 ? offset : undefined,
 				);
 
-				return {
-					pattern,
-					path: toRelativePath(resolved),
-					outputMode,
+					return {
+						pattern,
+						path: resolved,
+						outputMode,
 					numFiles: countsByFile.size,
 					numMatches: totalMatches,
 					matchCount: totalMatches,
@@ -490,17 +484,10 @@ export const grepSearch = tool({
 			}
 
 			const lines = stdout.trim().split('\n').filter(Boolean);
-			const preStatLimit = getPreStatLimit(headLimit, offset);
-			// Avoid stat'ing every rg result when the caller only needs a paginated page.
-			const candidateMatches: string[] =
-				preStatLimit === undefined
-					? lines
-					: applyHeadLimit(lines, preStatLimit).items;
-			const pagination = applyHeadLimit(lines, headLimit, offset);
 			const stats = await Promise.allSettled(
-				candidateMatches.map(async (filePath: string) => fs.stat(filePath)),
+				lines.map(async (filePath: string) => fs.stat(filePath)),
 			);
-			const sortedMatches = candidateMatches
+			const sortedMatches = lines
 				.map((filePath: string, index: number) => {
 					const result = stats[index]!;
 					const mtimeMs =
@@ -525,42 +512,44 @@ export const grepSearch = tool({
 					},
 				)
 				.map((item: {filePath: string; mtimeMs: number}) => item.filePath);
-			const {items: limitedMatches, appliedLimit} = applyHeadLimit(
+			const {
+				items: limitedMatches,
+				appliedLimit,
+				wasTruncated,
+			} = applyHeadLimit(
 				sortedMatches,
 				headLimit,
 				offset,
 			);
-			const relativeMatches = limitedMatches.map(toRelativePath);
+			const absoluteMatches = limitedMatches;
 			const limitInfo = formatLimitInfo(
 				appliedLimit,
 				offset > 0 ? offset : undefined,
 			);
 
 			if (sortedMatches.length === 0) {
-				return {
-					pattern,
-					path: toRelativePath(resolved),
-					outputMode,
+					return {
+						pattern,
+						path: resolved,
+						outputMode,
 					numFiles: 0,
 					filenames: [],
 					matchCount: 0,
 					matches: [],
 					truncated: false,
-					message: 'No files found',
-				};
-			}
-
-			const isTruncated = pagination.wasTruncated;
+						message: 'No files found',
+					};
+				}
 
 			return {
 				pattern,
-				path: toRelativePath(resolved),
+				path: resolved,
 				outputMode,
 				numFiles: lines.length,
 				matchCount: lines.length,
-				matches: relativeMatches,
-				truncated: isTruncated,
-				filenames: relativeMatches,
+				matches: absoluteMatches,
+				truncated: wasTruncated,
+				filenames: absoluteMatches,
 				...(appliedLimit !== undefined && {appliedLimit}),
 				...(offset > 0 && {appliedOffset: offset}),
 				...(limitInfo && {paginationInfo: limitInfo}),

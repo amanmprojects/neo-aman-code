@@ -1,8 +1,7 @@
 import type { LanguageModel } from "ai";
-import { MODEL_LIST } from "./providers";
+import { AGENT_MODEL_ID, AGENT_MODEL_INDEX, getModelById } from "./providers";
 
-/** Index into `MODEL_LIST` passed to `ToolLoopAgent` — keep in sync with `agent/index.ts` usage. */
-export const AGENT_MODEL_INDEX = 1 as const;
+export { AGENT_MODEL_ID, AGENT_MODEL_INDEX };
 
 /** Human-readable model id for the TUI: gateway string id, or `modelId` from a provider model instance. */
 export function languageModelLabel(model: LanguageModel): string {
@@ -18,5 +17,5 @@ export function languageModelLabel(model: LanguageModel): string {
     return "unknown-model";
 }
 
-export const AGENT_MODEL = MODEL_LIST[AGENT_MODEL_INDEX]!;
+export const AGENT_MODEL = getModelById(AGENT_MODEL_ID);
 export const AGENT_MODEL_LABEL = languageModelLabel(AGENT_MODEL);

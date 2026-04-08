@@ -20,22 +20,6 @@ type DirectoryEntryResult = {
 const ENTRY_PROCESSING_CONCURRENCY = 10;
 
 /**
- * Produce a display-friendly path: use a path relative to the current working directory with POSIX (`/`) separators when `targetPath` is inside the cwd; otherwise return `targetPath` unchanged.
- */
-function toDisplayPath(targetPath: string): string {
-    const relativePath = path.relative(process.cwd(), targetPath);
-    if (
-        !relativePath ||
-        relativePath.startsWith("..") ||
-        path.isAbsolute(relativePath)
-    ) {
-        return targetPath;
-    }
-
-    return relativePath.split(path.sep).join("/");
-}
-
-/**
  * Counts immediate entries (files, directories, symlinks, etc.) within a directory.
  */
 async function countChildren(directoryPath: string): Promise<number> {
@@ -98,7 +82,7 @@ export const listDir = tool({
             .string()
             .optional()
             .describe(
-                "The directory to list. Defaults to the current working directory.",
+                "Absolute path of the directory to list. If omitted, the current working directory absolute path is used. Relative inputs are resolved for compatibility but should not be used intentionally.",
             ),
         includeHidden: z
             .boolean()
@@ -169,7 +153,7 @@ export const listDir = tool({
 
                         return {
                             name: entry.name,
-                            path: toDisplayPath(absoluteEntryPath),
+                            path: absoluteEntryPath,
                             type,
                             size: type === "file" ? entryStat.size : undefined,
                             children:
@@ -180,7 +164,7 @@ export const listDir = tool({
                     } catch {
                         return {
                             name: entry.name,
-                            path: toDisplayPath(absoluteEntryPath),
+                            path: absoluteEntryPath,
                             type: "other",
                             size: undefined,
                             children: undefined,
@@ -200,7 +184,9 @@ export const listDir = tool({
             const errorRecord = error as { code?: string; message?: string };
             if (errorRecord.code === "ENOENT") {
                 return {
-                    error: `Directory does not exist: ${inputPath ?? process.cwd()}`,
+                    error: `Directory does not exist: ${
+                        inputPath ? path.resolve(inputPath) : process.cwd()
+                    }`,
                 };
             }
 
@@ -216,4 +202,3 @@ export const listDir = tool({
 });
 
 export type ListDirToolInvocation = UIToolInvocation<typeof listDir>;
-

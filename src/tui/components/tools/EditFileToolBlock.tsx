@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { createPatch } from "diff";
+import { createTwoFilesPatch } from "diff";
 import type { EditFileToolInvocation } from "../../../agent/tools/edit-file";
 import { theme } from "../../theme";
 import { AssistantToolFrame } from "../MessageFrames";
@@ -63,11 +63,23 @@ function EditFileDiffView({ filePath, patch }: { filePath: string; patch: string
     );
 }
 
+function toPatchPath(filePath: string, prefix: "a" | "b"): string {
+    return `${prefix}/${filePath.replaceAll("\\", "/").replace(/^\/+/, "")}`;
+}
+
 function snippetPatch(filePath: string, oldString: string, newString: string): string {
-    const name = path.basename(filePath) || "file";
-    return createPatch(name, oldString, newString, `a/${name}`, `b/${name}`, {
+    const normalizedPath = filePath || "file";
+    return createTwoFilesPatch(
+        toPatchPath(normalizedPath, "a"),
+        toPatchPath(normalizedPath, "b"),
+        oldString,
+        newString,
+        "original",
+        "modified",
+        {
         context: FULL_DIFF_CONTEXT,
-    });
+        },
+    );
 }
 
 function formatOutputHeader(output: NonNullable<EditFileToolInvocation["output"]>): string {

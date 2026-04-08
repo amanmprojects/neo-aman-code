@@ -4,7 +4,7 @@ import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {execa, type ExecaError} from 'execa';
 import treeKill from 'tree-kill';
-import {getExecuteCommandDescription, DEFAULT_TIMEOUT_SECONDS} from './prompt';
+import {getExecuteCommandDescription, defaultTimeoutSeconds} from './prompt';
 
 const DANGEROUS_PATTERNS = [
 	/rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f?\s+\/(?!\S)/,
@@ -207,7 +207,7 @@ export const bashTool = tool({
 			.string()
 			.optional()
 			.describe(
-				'Working directory for the command. Defaults to current directory.',
+				'Absolute working directory for the command. If omitted, the current working directory absolute path is used. Relative inputs are resolved for compatibility but should not be used intentionally.',
 			),
 		timeoutSeconds: z
 			.number()
@@ -237,7 +237,7 @@ export const bashTool = tool({
 	async execute({
 		command,
 		cwd,
-		timeoutSeconds = DEFAULT_TIMEOUT_SECONDS,
+		timeoutSeconds = defaultTimeoutSeconds,
 		maxOutputChars = DEFAULT_MAX_OUTPUT_CHARS,
 		background = false,
 	}): Promise<BashToolOutput> {
@@ -362,10 +362,11 @@ export const bashTool = tool({
 				clearTimeout(timeoutId);
 			}
 
-			const exitCode = result.exitCode ?? (result.timedOut ? SIGTERM : 1);
+			const exitCode =
+				timedOut || killedByTimeout ? SIGTERM : (result.exitCode ?? 1);
 
 			// Prepend timeout message if timed out
-			if (result.timedOut || killedByTimeout) {
+			if (timedOut || killedByTimeout) {
 				stderr = `Command timed out after ${formatDuration(
 					timeoutMs,
 				)}\n${stderr}`;
@@ -378,7 +379,7 @@ export const bashTool = tool({
 				background: false,
 				durationMs: Date.now() - startedAt,
 				timeoutSeconds,
-				timedOut: timedOut || Boolean(result.timedOut),
+				timedOut,
 				aborted: false,
 				stdout: stdout.trimEnd(),
 				stderr: stderr.trimEnd(),

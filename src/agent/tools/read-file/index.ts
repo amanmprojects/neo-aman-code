@@ -12,7 +12,6 @@ import { getReadFileDescription } from "./prompt";
 
 async function findSimilarFiles(
     targetPath: string,
-    cwd: string,
 ): Promise<string | undefined> {
     try {
         const dir = path.dirname(targetPath);
@@ -41,12 +40,7 @@ async function findSimilarFiles(
 
         if (similar.length > 0) {
             const similarPath = path.join(dir, similar[0]!);
-            const relativePath = path.relative(cwd, similarPath);
-            if (!relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
-                return relativePath.replaceAll(path.sep, "/");
-            }
-
-            return similar[0]!;
+            return similarPath;
         }
     } catch {
         // Ignore errors in suggestion logic
@@ -72,7 +66,9 @@ export const readFile = tool({
     inputSchema: z.object({
         filePath: z
             .string()
-            .describe("Absolute or relative path to the file to read"),
+            .describe(
+                "Absolute path to the file to read. Relative inputs are resolved against the current working directory for compatibility but should not be used intentionally.",
+            ),
         offset: z
             .number()
             .int()
@@ -116,10 +112,14 @@ export const readFile = tool({
                     let message = `File not found: ${resolved}. Current working directory: ${cwd}.`;
 
                     const cwdSuggestion = suggestPathUnderCwd(resolved, cwd);
-                    if (cwdSuggestion) {
+                    if (
+                        cwdSuggestion &&
+                        cwdSuggestion !== filePath &&
+                        cwdSuggestion !== resolved
+                    ) {
                         message += ` Did you mean ${cwdSuggestion}?`;
                     } else {
-                        const similar = await findSimilarFiles(resolved, cwd);
+                        const similar = await findSimilarFiles(resolved);
                         if (similar) {
                             message += ` Did you mean ${similar}?`;
                         }
@@ -165,6 +165,9 @@ export const readFile = tool({
             const raw = await fp.readFile(resolved, "utf8");
             const content = raw.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
             const lines = content.split("\n");
+            if (content.endsWith("\n") && lines.at(-1) === "") {
+                lines.pop();
+            }
             const totalLines = lines.length;
 
             if (totalLines === 0 || (totalLines === 1 && lines[0] === "")) {
@@ -242,4 +245,3 @@ export const readFile = tool({
 });
 
 export type ReadFileToolInvocation = UIToolInvocation<typeof readFile>;
-
