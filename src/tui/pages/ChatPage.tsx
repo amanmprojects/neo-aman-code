@@ -18,6 +18,7 @@ type ChatPageProps = {
   onSubmit: (value: string) => void;
   showSidebar: boolean;
   showFooter: boolean;
+  status: "ready" | "streaming" | "submitted" | "error";
 };
 
 export function ChatPage({
@@ -31,6 +32,7 @@ export function ChatPage({
   onSubmit,
   showSidebar,
   showFooter,
+  status,
 }: ChatPageProps) {
 
   return (
@@ -54,6 +56,7 @@ export function ChatPage({
             onSubmit={onSubmit}
             placeholder={INPUT_PLACEHOLDER}
             focused
+            status={status}
           />
           {showFooter && (
             <box marginTop={0} border={["top"]} borderColor={theme.bg} borderStyle="single">

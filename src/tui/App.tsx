@@ -98,6 +98,7 @@ function AppShell() {
               onSubmit={handleSubmit}
               showSidebar={showSidebar}
               showFooter={showFooter}
+              status={status}
             />
           </ChatSessionProvider>
         </box>

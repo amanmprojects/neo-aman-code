@@ -1,12 +1,14 @@
 import type { InputProps } from "@opentui/react";
 import { theme } from "../theme";
 import { useModelName } from "../hooks/modelName";
+import "opentui-spinner/react";
 
 type OmnibarProps = {
   width: number | "100%";
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  status: "ready" | "streaming" | "submitted" | "error";
   placeholder: string;
   focused?: boolean;
 };
@@ -18,6 +20,7 @@ export function Omnibar({
   onSubmit,
   placeholder,
   focused = true,
+  status = "ready",
 }: OmnibarProps) {
   const modelName = useModelName();
 
@@ -50,13 +53,18 @@ export function Omnibar({
           placeholderColor={theme.muted}
           cursorColor={theme.cursor}
         />
-        <text fg={theme.dim}>
-          <span fg={theme.accent}>Build</span>
-          {"  "}
-          <span fg={theme.text}>{modelName}</span>
-          {" · "}
-          <span fg={theme.orange}>xhigh</span>
-        </text>
+        <box flexDirection="row" alignItems="center" gap={1}>
+          <text fg={theme.dim} flexShrink={1}>
+            <span fg={theme.accent}>Build</span>
+            {"  "}
+            <span fg={theme.text}>{modelName}</span>
+            {" · "}
+            <span fg={theme.orange}>xhigh</span>
+          </text>
+          {(status !== "ready" && status !== "error") ? (
+            <spinner color={theme.accent} autoplay />
+          ) : null}
+        </box>
       </box>
     </box>
   );
