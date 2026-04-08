@@ -1,51 +1,10 @@
-import * as path from "node:path";
 import { createTwoFilesPatch } from "diff";
 import type { EditFileToolInvocation } from "../../../agent/tools/edit-file";
 import { theme } from "../../theme";
 import { AssistantToolFrame } from "../MessageFrames";
+import { filetypeForPath } from "../../utils/fileTypes";
 
 const FULL_DIFF_CONTEXT = Number.MAX_SAFE_INTEGER;
-
-function filetypeForPath(filePath: string): string | undefined {
-    const ext = path.extname(filePath).slice(1).toLowerCase();
-    switch (ext) {
-        case "ts":
-        case "mts":
-        case "cts":
-            return "typescript";
-        case "tsx":
-            return "tsx";
-        case "js":
-        case "jsx":
-        case "mjs":
-        case "cjs":
-            return "javascript";
-        case "json":
-            return "json";
-        case "md":
-        case "mdx":
-            return "markdown";
-        case "css":
-            return "css";
-        case "html":
-        case "htm":
-            return "html";
-        case "py":
-            return "python";
-        case "rs":
-            return "rust";
-        case "go":
-            return "go";
-        case "sh":
-        case "bash":
-            return "bash";
-        case "yml":
-        case "yaml":
-            return "yaml";
-        default:
-            return undefined;
-    }
-}
 
 function EditFileDiffView({ filePath, patch }: { filePath: string; patch: string }) {
     const filetype = filetypeForPath(filePath);
@@ -86,8 +45,29 @@ function formatOutputHeader(output: NonNullable<EditFileToolInvocation["output"]
     if ("error" in output && typeof output.error === "string") {
         return output.error;
     }
-    const n = output.replacedOccurrences;
-    return `${output.filePath} — ${n} replacement${n === 1 ? "" : "s"}`;
+    if (
+        "replacedOccurrences" in output &&
+        typeof output.replacedOccurrences === "number" &&
+        typeof output.filePath === "string"
+    ) {
+        const n = output.replacedOccurrences;
+        return `${output.filePath} — ${n} replacement${n === 1 ? "" : "s"}`;
+    }
+    return "editFile completed";
+}
+
+function isEditFileSuccessOutput(
+    output: NonNullable<EditFileToolInvocation["output"]>,
+): output is Extract<
+    NonNullable<EditFileToolInvocation["output"]>,
+    { diff: string; filePath: string; replacedOccurrences: number }
+> {
+    return (
+        !("error" in output) &&
+        typeof output.diff === "string" &&
+        typeof output.filePath === "string" &&
+        typeof output.replacedOccurrences === "number"
+    );
 }
 
 export function EditFileToolBlock({ invocation }: { invocation: EditFileToolInvocation }) {
@@ -121,6 +101,13 @@ export function EditFileToolBlock({ invocation }: { invocation: EditFileToolInvo
                 return (
                     <AssistantToolFrame border={["left"]}>
                         <text fg={theme.muted}>editFile — error: {out.error}</text>
+                    </AssistantToolFrame>
+                );
+            }
+            if (!isEditFileSuccessOutput(out)) {
+                return (
+                    <AssistantToolFrame border={["left"]}>
+                        <text fg={theme.muted}>editFile — {formatOutputHeader(out)}</text>
                     </AssistantToolFrame>
                 );
             }
