@@ -1,6 +1,8 @@
 import type { InputProps } from "@opentui/react";
+import { useMemo } from "react";
 import { theme } from "../theme";
 import { useModelName } from "../hooks/modelName";
+import { createColors, createFrames } from "./spinner/knightRider";
 import "opentui-spinner/react";
 
 type OmnibarProps = {
@@ -23,6 +25,24 @@ export function Omnibar({
   status = "ready",
 }: OmnibarProps) {
   const modelName = useModelName();
+
+  const knightRiderSpinner = useMemo(
+    () => ({
+      frames: createFrames({
+        color: theme.accent,
+        style: "blocks",
+        inactiveFactor: 0.6,
+        minAlpha: 0.3,
+      }),
+      color: createColors({
+        color: theme.accent,
+        style: "blocks",
+        inactiveFactor: 0.6,
+        minAlpha: 0.3,
+      }),
+    }),
+    [theme.accent],
+  );
 
   return (
     <box flexDirection="row" width={width} alignItems="stretch"
@@ -62,7 +82,12 @@ export function Omnibar({
             <span fg={theme.orange}>xhigh</span>
           </text>
           {(status !== "ready" && status !== "error") ? (
-            <spinner color={theme.accent} autoplay />
+            <spinner
+              color={knightRiderSpinner.color}
+              frames={knightRiderSpinner.frames}
+              interval={40}
+              autoplay
+            />
           ) : null}
         </box>
       </box>
