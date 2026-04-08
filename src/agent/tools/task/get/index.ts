@@ -1,18 +1,18 @@
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
-import {getTaskRecord, getTaskSessionId} from '../taskListState';
+import {
+	getTaskSessionId,
+	listTaskRecords,
+	TASK_STATUSES,
+	getTaskRecord,
+} from '../taskListState';
 import {getTaskGetDescription} from './prompt';
-
-const isTaskStatus = (
-	value: string,
-): value is 'pending' | 'in_progress' | 'completed' =>
-	value === 'pending' || value === 'in_progress' || value === 'completed';
 
 const taskOutputSchema = z.object({
 	id: z.string(),
 	subject: z.string(),
 	description: z.string(),
-	status: z.string().refine(isTaskStatus, 'Invalid task status'),
+	status: z.enum(TASK_STATUSES),
 	blocks: z.array(z.string()),
 	blockedBy: z.array(z.string()),
 	owner: z.string().optional(),
@@ -32,6 +32,11 @@ export const taskGet = tool({
 		if (!taskRecord) {
 			return {task: null};
 		}
+		const completedTaskIds = new Set(
+			listTaskRecords(sessionId)
+				.filter(task => task.status === 'completed')
+				.map(task => task.id),
+		);
 
 		const task = taskOutputSchema.parse({
 			id: taskRecord.id,
@@ -39,7 +44,7 @@ export const taskGet = tool({
 			description: taskRecord.description,
 			status: taskRecord.status,
 			blocks: taskRecord.blocks,
-			blockedBy: taskRecord.blockedBy,
+			blockedBy: taskRecord.blockedBy.filter(id => !completedTaskIds.has(id)),
 			owner: taskRecord.owner,
 		});
 
@@ -48,3 +53,5 @@ export const taskGet = tool({
 		};
 	},
 });
+
+export type TaskGetToolInvocation = UIToolInvocation<typeof taskGet>;

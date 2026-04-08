@@ -1,21 +1,13 @@
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {
 	deleteTaskRecord,
 	getTaskSessionId,
+	TASK_STATUSES,
+	TASK_UPDATE_STATUSES,
 	updateTaskRecord,
 } from '../taskListState';
 import {getTaskUpdateDescription} from './prompt';
-
-const isTaskStatus = (
-	value: string,
-): value is 'pending' | 'in_progress' | 'completed' =>
-	value === 'pending' || value === 'in_progress' || value === 'completed';
-
-const isTaskUpdateStatus = (
-	value: string,
-): value is 'pending' | 'in_progress' | 'completed' | 'deleted' =>
-	isTaskStatus(value) || value === 'deleted';
 
 export const taskUpdate = tool({
 	description: getTaskUpdateDescription(),
@@ -30,11 +22,7 @@ export const taskUpdate = tool({
 			.string()
 			.optional()
 			.describe('Present continuous text for in-progress UI states.'),
-		status: z
-			.string()
-			.refine(isTaskUpdateStatus, 'Invalid task status')
-			.optional()
-			.describe('New status for the task.'),
+		status: z.enum(TASK_UPDATE_STATUSES).optional().describe('New status for the task.'),
 		addBlocks: z
 			.array(z.string())
 			.optional()
@@ -58,8 +46,8 @@ export const taskUpdate = tool({
 		error: z.string().optional(),
 		statusChange: z
 			.object({
-				from: z.string().refine(isTaskStatus, 'Invalid task status'),
-				to: z.string().refine(isTaskStatus, 'Invalid task status'),
+				from: z.enum(TASK_STATUSES),
+				to: z.enum(TASK_STATUSES),
 			})
 			.optional(),
 	}),
@@ -104,3 +92,5 @@ export const taskUpdate = tool({
 		};
 	},
 });
+
+export type TaskUpdateToolInvocation = UIToolInvocation<typeof taskUpdate>;

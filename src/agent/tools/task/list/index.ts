@@ -1,17 +1,12 @@
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
-import {getTaskSessionId, listTaskRecords} from '../taskListState';
+import {getTaskSessionId, listTaskRecords, TASK_STATUSES} from '../taskListState';
 import {getTaskListDescription} from './prompt';
-
-const isTaskStatus = (
-	value: string,
-): value is 'pending' | 'in_progress' | 'completed' =>
-	value === 'pending' || value === 'in_progress' || value === 'completed';
 
 const taskSummarySchema = z.object({
 	id: z.string(),
 	subject: z.string(),
-	status: z.string().refine(isTaskStatus, 'Invalid task status'),
+	status: z.enum(TASK_STATUSES),
 	owner: z.string().optional(),
 	blockedBy: z.array(z.string()),
 });
@@ -42,3 +37,5 @@ export const taskList = tool({
 		};
 	},
 });
+
+export type TaskListToolInvocation = UIToolInvocation<typeof taskList>;

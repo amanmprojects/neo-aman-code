@@ -1,4 +1,4 @@
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {createTaskRecord, getTaskSessionId} from '../taskListState';
 import {getTaskCreateDescription} from './prompt';
@@ -39,3 +39,5 @@ export const taskCreate = tool({
 		};
 	},
 });
+
+export type TaskCreateToolInvocation = UIToolInvocation<typeof taskCreate>;

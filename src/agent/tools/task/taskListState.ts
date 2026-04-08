@@ -1,6 +1,9 @@
 import type {ToolExecutionOptions} from 'ai';
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed';
+export const TASK_STATUSES = ['pending', 'in_progress', 'completed'] as const;
+export type TaskStatus = (typeof TASK_STATUSES)[number];
+export const TASK_UPDATE_STATUSES = [...TASK_STATUSES, 'deleted'] as const;
+export type TaskUpdateStatus = (typeof TASK_UPDATE_STATUSES)[number];
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type TodoItem = {
 	id: string;
@@ -231,7 +234,9 @@ export function updateTaskRecord(
 	}
 
 	if (updates.addBlocks && updates.addBlocks.length > 0) {
-		const additions = updates.addBlocks.filter(id => store.tasks.has(id));
+		const additions = updates.addBlocks.filter(
+			id => id !== taskId && store.tasks.has(id),
+		);
 		if (additions.length > 0) {
 			existing.blocks = dedupe([...existing.blocks, ...additions]);
 			for (const blockedTaskId of additions) {
@@ -246,7 +251,9 @@ export function updateTaskRecord(
 	}
 
 	if (updates.addBlockedBy && updates.addBlockedBy.length > 0) {
-		const additions = updates.addBlockedBy.filter(id => store.tasks.has(id));
+		const additions = updates.addBlockedBy.filter(
+			id => id !== taskId && store.tasks.has(id),
+		);
 		if (additions.length > 0) {
 			existing.blockedBy = dedupe([...existing.blockedBy, ...additions]);
 			for (const blockerId of additions) {
