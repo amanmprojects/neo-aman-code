@@ -13,8 +13,8 @@ Use this tool proactively in these scenarios:
 - User explicitly requests todo list - When the user directly asks you to use the todo list
 - User provides multiple tasks - When users provide a list of things to be done (numbered or comma-separated)
 - After receiving new instructions - Immediately capture user requirements as tasks
-- When you start working on a task - Mark it as in_progress BEFORE beginning work
-- After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation
+- When you discover new follow-up work that should be tracked as its own task
+- After completing a task - Create any newly discovered follow-up tasks here
 
 ## When NOT to Use This Tool
 
@@ -28,13 +28,14 @@ Skip using this tool when:
 
 - **subject**: A brief, actionable title in imperative form (e.g., "Fix authentication bug in login flow")
 - **description**: What needs to be done
-- **activeForm** (optional): Present continuous form shown in the spinner when the task is in_progress (e.g., "Fixing authentication bug"). If omitted, the spinner shows the subject instead.
+- **activeForm** (optional): Present continuous form shown in the spinner when the task later becomes in_progress (e.g., "Fixing authentication bug"). If omitted, the spinner shows the subject instead.
 
-All tasks are created with status 'pending'.
+Every taskCreate call creates a new task with status 'pending'.
 
 ## Tips
 
 - Create tasks with clear, specific subjects that describe the outcome
-- After creating tasks, use TaskUpdate to set up dependencies (blocks/blockedBy) if needed
-- Check TaskList first to avoid creating duplicate tasks`;
+- Use taskUpdate, not this tool, to mark existing tasks as 'in_progress' or 'completed'
+- After creating tasks, use taskUpdate to set up blockedBy dependencies if needed
+- Check taskList first to avoid creating duplicate tasks`;
 }
