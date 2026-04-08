@@ -57,7 +57,7 @@ function AppShell() {
       const text = raw.trim();
       if (!text) return;
 
-      if (status === "ready") {
+      if (status === "ready" || status === "error") {
         setInputValue("");
         sendMessage({ text });
       }
