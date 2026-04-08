@@ -6,10 +6,11 @@ import {getTaskCreateDescription} from './prompt';
 export const taskCreate = tool({
 	description: getTaskCreateDescription(),
 	inputSchema: z.object({
-		subject: z.string().describe('A brief title for the task.'),
-		description: z.string().describe('What needs to be done.'),
+		subject: z.string().max(120).describe('A brief title for the task.'),
+		description: z.string().max(2000).describe('What needs to be done.'),
 		activeForm: z
 			.string()
+			.max(200)
 			.optional()
 			.describe('Present continuous text for in-progress UI states.'),
 		metadata: z

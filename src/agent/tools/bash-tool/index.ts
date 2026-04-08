@@ -11,8 +11,8 @@ import {
 } from './prompt';
 
 const DANGEROUS_PATTERNS = [
-	/rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f?\s+\/(?!\S)/,
-	/rm\s+(-[a-zA-Z]*)?f[a-zA-Z]*r?\s+\/(?!\S)/,
+	/rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f?\s+\/(?:\S|$)/,
+	/rm\s+(-[a-zA-Z]*)?f[a-zA-Z]*r?\s+\/(?:\S|$)/,
 	/mkfs/,
 	/dd\s+if=/,
 	/:\(\)\s*{\s*:\|:&\s*};/, // Fork bomb pattern
@@ -28,6 +28,19 @@ const DANGEROUS_PATTERNS = [
 const DEFAULT_MAX_OUTPUT_CHARS = 12_000;
 
 const SIGTERM = 143;
+
+type ExecaErrorLike = Pick<ExecaError, 'code' | 'exitCode' | 'shortMessage'>;
+
+function isExecaErrorLike(error: unknown): error is ExecaErrorLike {
+	if (typeof error !== 'object' || error === null) {
+		return false;
+	}
+
+	const record = error as Record<string, unknown>;
+	return (
+		'exitCode' in record || 'shortMessage' in record || 'code' in record
+	);
+}
 
 export type BashToolCommandClassification =
 	| 'read'
@@ -395,7 +408,20 @@ export const bashTool = tool({
 			}
 			return out;
 		} catch (error: unknown) {
-			const execaError = error as ExecaError;
+			const execaError = isExecaErrorLike(error) ? error : undefined;
+			const exitCode =
+				typeof execaError?.exitCode === 'number'
+					? execaError.exitCode
+					: execaError?.code === 'ENOENT'
+						? 127
+						: 1;
+			const errorMessage =
+				typeof execaError?.shortMessage === 'string'
+					? execaError.shortMessage
+					: error instanceof Error
+						? error.message
+						: String(error);
+
 			return {
 				command,
 				cwd: resolvedCwd,
@@ -403,11 +429,8 @@ export const bashTool = tool({
 				background: false,
 				stdout: '',
 				stderr: '',
-				exitCode:
-					execaError?.exitCode ?? (execaError?.code === 'ENOENT' ? 127 : 1),
-				error:
-					execaError?.shortMessage ||
-					(error instanceof Error ? error.message : String(error)),
+				exitCode,
+				error: errorMessage,
 			};
 		}
 	},

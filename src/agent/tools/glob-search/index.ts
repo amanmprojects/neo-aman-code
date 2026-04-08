@@ -7,6 +7,8 @@ import {getGlobSearchDescription} from './prompt.js';
 
 const DEFAULT_LIMIT = 100;
 const EXCLUDED_DIRECTORIES = new Set(['node_modules', '.git', 'dist']);
+const MAX_GLOB_PATTERN_LENGTH = 512;
+const MAX_GLOBSTAR_TOKENS = 16;
 
 type SearchType = 'file' | 'directory' | 'any';
 
@@ -19,8 +21,28 @@ function normalizeGlobPattern(pattern: string): string {
 	return normalized.startsWith('./') ? normalized.slice(2) : normalized;
 }
 
+function validateGlobPattern(pattern: string): void {
+	if (pattern.length > MAX_GLOB_PATTERN_LENGTH) {
+		throw new Error(
+			`Glob pattern is too long (${pattern.length} characters). Maximum length is ${MAX_GLOB_PATTERN_LENGTH}.`,
+		);
+	}
+
+	if (pattern.includes('***')) {
+		throw new Error('Glob pattern contains unsupported repeated "*" segments.');
+	}
+
+	const globstarMatches = pattern.match(/\*\*/g) ?? [];
+	if (globstarMatches.length > MAX_GLOBSTAR_TOKENS) {
+		throw new Error(
+			`Glob pattern contains too many "**" tokens. Maximum allowed is ${MAX_GLOBSTAR_TOKENS}.`,
+		);
+	}
+}
+
 function globToRegExp(pattern: string): RegExp {
 	const normalizedPattern = normalizeGlobPattern(pattern);
+	validateGlobPattern(normalizedPattern);
 	let expression = '^';
 
 	for (let index = 0; index < normalizedPattern.length; index++) {
