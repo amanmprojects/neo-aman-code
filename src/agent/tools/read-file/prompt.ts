@@ -16,7 +16,7 @@ Assume this tool is able to read all files on the machine. If the User provides 
 Usage:
 - The filePath parameter must be an absolute path, not a relative path. Relative inputs may be resolved against the current working directory for compatibility, but you should always send an absolute path.
 - By default, it reads up to ${maxLinesToRead} lines starting from the beginning of the file
-- You can optionally specify a line offset and limit (especially handy for long files), but it's recommended to read the whole file by not providing these parameters
+- You can optionally specify offset and limit for pagination. If offset and limit are not provided, the tool returns up to maxLinesToRead lines rather than the whole file.
 - Results are returned using cat -n format, with line numbers starting at 1
 - This tool reads text files. Binary formats such as images, audio, video, archives, and office documents are rejected.
 - Jupyter notebooks (.ipynb files) are returned as raw file contents only; notebook cells and outputs are not parsed into a richer structure.

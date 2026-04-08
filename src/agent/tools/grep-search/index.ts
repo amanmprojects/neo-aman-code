@@ -421,10 +421,10 @@ export const grepSearch = tool({
 					offset > 0 ? offset : undefined,
 				);
 
-					return {
-						pattern,
-						path: resolved,
-						outputMode,
+				return {
+					pattern,
+					path: resolved,
+					outputMode,
 					matchCount: totalMatchCount,
 					matches: limitedLines,
 					truncated: wasTruncated,
@@ -467,10 +467,10 @@ export const grepSearch = tool({
 					offset > 0 ? offset : undefined,
 				);
 
-					return {
-						pattern,
-						path: resolved,
-						outputMode,
+				return {
+					pattern,
+					path: resolved,
+					outputMode,
 					numFiles: countsByFile.size,
 					numMatches: totalMatches,
 					matchCount: totalMatches,
@@ -528,18 +528,18 @@ export const grepSearch = tool({
 			);
 
 			if (sortedMatches.length === 0) {
-					return {
-						pattern,
-						path: resolved,
-						outputMode,
+				return {
+					pattern,
+					path: resolved,
+					outputMode,
 					numFiles: 0,
 					filenames: [],
 					matchCount: 0,
 					matches: [],
 					truncated: false,
-						message: 'No files found',
-					};
-				}
+					message: 'No files found',
+				};
+			}
 
 			return {
 				pattern,

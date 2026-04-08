@@ -114,18 +114,9 @@ async function collectMatches(options: {
 	searchType: SearchType;
 	maxDepth?: number;
 	depth: number;
-	stopAfter?: number;
 }): Promise<Array<{filePath: string; mtimeMs: number}>> {
-	const {
-		rootPath,
-		currentPath,
-		pattern,
-		excludePatterns,
-		searchType,
-		maxDepth,
-		depth,
-		stopAfter,
-	} = options;
+	const {rootPath, currentPath, pattern, excludePatterns, searchType, maxDepth, depth} =
+		options;
 
 	if (maxDepth !== undefined && depth > maxDepth) {
 		return [];
@@ -160,10 +151,6 @@ async function collectMatches(options: {
 		) {
 			const stats = await fs.stat(absolutePath);
 			matches.push({filePath: absolutePath, mtimeMs: stats.mtimeMs});
-
-			if (stopAfter !== undefined && matches.length >= stopAfter) {
-				return matches;
-			}
 		}
 
 		if (
@@ -178,14 +165,8 @@ async function collectMatches(options: {
 				searchType,
 				maxDepth,
 				depth: nextDepth,
-				stopAfter:
-					stopAfter === undefined ? undefined : stopAfter - matches.length,
 			});
 			matches.push(...nestedMatches);
-
-			if (stopAfter !== undefined && matches.length >= stopAfter) {
-				return matches;
-			}
 		}
 	}
 
@@ -315,15 +296,12 @@ export const globSearch = tool({
 				searchType: type,
 				maxDepth,
 				depth: 0,
-				...(includeTotalMatches ? {} : {stopAfter: offset + limit}),
 			});
 
 			matches.sort((left, right) => right.mtimeMs - left.mtimeMs);
 
 			const pagedMatches = matches.slice(offset, offset + limit);
-			const truncated = includeTotalMatches
-				? offset + pagedMatches.length < matches.length
-				: matches.length >= offset + limit;
+			const truncated = offset + pagedMatches.length < matches.length;
 			const filenames = pagedMatches.map(match => match.filePath);
 
 			return {

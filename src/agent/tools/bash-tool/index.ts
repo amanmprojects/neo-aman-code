@@ -4,7 +4,11 @@ import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {execa, type ExecaError} from 'execa';
 import treeKill from 'tree-kill';
-import {getExecuteCommandDescription, defaultTimeoutSeconds} from './prompt';
+import {
+	defaultTimeoutSeconds,
+	getExecuteCommandDescription,
+	maxTimeoutSeconds,
+} from './prompt';
 
 const DANGEROUS_PATTERNS = [
 	/rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f?\s+\/(?!\S)/,
@@ -213,10 +217,10 @@ export const bashTool = tool({
 			.number()
 			.int()
 			.positive()
-			.max(30 * 60) // Max 30 minutes
+			.max(maxTimeoutSeconds)
 			.optional()
 			.describe(
-				'Maximum runtime before the command is terminated, in seconds. Defaults to 600 (10 minutes).',
+				`Maximum runtime before the command is terminated, in seconds. Defaults to ${defaultTimeoutSeconds} (${defaultTimeoutSeconds / 60} minutes); maximum ${maxTimeoutSeconds} (${maxTimeoutSeconds / 60} minutes).`,
 			),
 		maxOutputChars: z
 			.number()
@@ -316,7 +320,6 @@ export const bashTool = tool({
 			let stdoutTruncated = false;
 			let stderrTruncated = false;
 			let timedOut = false;
-			let killedByTimeout = false;
 
 			// Use execa with streaming for bounded output
 			const subprocess = execa(command, [], {
@@ -326,7 +329,6 @@ export const bashTool = tool({
 
 			const timeoutHandler = () => {
 				timedOut = true;
-				killedByTimeout = true;
 				if (subprocess.pid) {
 					treeKill(subprocess.pid, 'SIGTERM');
 				}
@@ -363,10 +365,10 @@ export const bashTool = tool({
 			}
 
 			const exitCode =
-				timedOut || killedByTimeout ? SIGTERM : (result.exitCode ?? 1);
+				timedOut ? SIGTERM : (result.exitCode ?? 1);
 
 			// Prepend timeout message if timed out
-			if (timedOut || killedByTimeout) {
+			if (timedOut) {
 				stderr = `Command timed out after ${formatDuration(
 					timeoutMs,
 				)}\n${stderr}`;

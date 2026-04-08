@@ -13,17 +13,18 @@ export function getExecuteCommandDescription(): string {
 
 IMPORTANT: Avoid using this tool to run file manipulation commands like cat, head, tail, find, grep, or echo. Instead, use the appropriate dedicated tool as this will provide a much better experience for the user:
 - File search: Use globSearch (NOT find or ls)
+- Directory listing: Use list-dir or globSearch (NOT ls)
 - Content search: Use grepSearch (NOT grep or rg)
 - Read files: Use readFile (NOT cat/head/tail)
 - Edit files: Use editFile (NOT sed/awk)
 - Write files: Use writeFile (NOT echo >/cat <<EOF)
 
-While the executeCommand tool can do similar things, it's better to use the built-in tools as they provide a better user experience and make it easier to review tool calls and give permission.
+The executeCommand tool exists for shell execution, but it should not be used for file listing or file content tasks. Use globSearch or list-dir for directory listing, grepSearch for content search, readFile for reading, editFile for edits, and writeFile for writes. These built-in tools provide a better user experience and make it easier to review tool calls and give permission.
 
 Usage:
 - The working directory persists between commands, but shell state does not. The shell environment is initialized from the user's profile (bash or zsh).
 - Always use absolute paths for commands and for the optional cwd parameter. If cwd is omitted, the tool uses the current working directory absolute path.
-- If your command will create new directories or files, first use this tool to run ls to verify the parent directory exists and is the correct location.
+- If you need to verify that a parent directory exists or inspect its contents, use globSearch or list-dir instead of ls.
 - Always quote file paths that contain spaces with double quotes in your command (e.g., cd "path with spaces/file.txt")
 - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of cd. You may use cd if the User explicitly requests it.
 - You may specify an optional timeout in seconds (up to ${maxTimeoutSeconds}s / ${
