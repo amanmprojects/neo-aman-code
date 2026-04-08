@@ -10,6 +10,7 @@ import { GlobSearchToolBlock } from "./tools/GlobSearchToolBlock";
 import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
 import { WriteFileToolBlock } from "./tools/WriteFileToolBlock";
 import { EditFileToolBlock } from "./tools/EditFileToolBlock";
+import { BashToolBlock } from "./tools/BashToolBlock";
 import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
@@ -103,6 +104,8 @@ export function AssistantMessage({
                         return <GlobSearchToolBlock key={key} invocation={part} />;
                     case "tool-grepSearch":
                         return <GrepSearchToolBlock key={key} invocation={part} />;
+                    case "tool-bashTool":
+                        return <BashToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

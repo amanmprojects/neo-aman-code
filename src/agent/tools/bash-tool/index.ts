@@ -4,7 +4,7 @@ import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {execa, type ExecaError} from 'execa';
 import treeKill from 'tree-kill';
-import {getExecuteCommandDescription, DEFAULT_TIMEOUT_MS} from './prompt.js';
+import {getExecuteCommandDescription, DEFAULT_TIMEOUT_SECONDS} from './prompt';
 
 const DANGEROUS_PATTERNS = [
 	/rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f?\s+\/(?!\S)/,
@@ -25,7 +25,79 @@ const DEFAULT_MAX_OUTPUT_CHARS = 12_000;
 
 const SIGTERM = 143;
 
-type CommandClassification = 'read' | 'search' | 'mutating' | 'unknown';
+export type BashToolCommandClassification =
+	| 'read'
+	| 'search'
+	| 'mutating'
+	| 'unknown';
+
+/** Working directory invalid or missing — no command was run. */
+export type BashToolOutputEarlyError = {
+	error: string;
+};
+
+export type BashToolOutputBackgroundStarted = {
+	command: string;
+	cwd: string;
+	classification: BashToolCommandClassification;
+	background: true;
+	pid: number;
+	startedAt: number;
+	stdout: '';
+	stderr: '';
+	exitCode?: undefined;
+};
+
+export type BashToolOutputBackgroundStartFailed = {
+	command: string;
+	cwd: string;
+	classification: BashToolCommandClassification;
+	background: true;
+	pid: null;
+	startedAt: number;
+	stdout: '';
+	stderr: string;
+	exitCode: 1;
+	error: string;
+};
+
+export type BashToolOutputForeground = {
+	command: string;
+	cwd: string;
+	classification: BashToolCommandClassification;
+	background: false;
+	durationMs: number;
+	/** Configured maximum runtime for this invocation, in seconds. */
+	timeoutSeconds: number;
+	timedOut: boolean;
+	aborted: boolean;
+	stdout: string;
+	stderr: string;
+	stdoutTruncated: boolean;
+	stderrTruncated: boolean;
+	exitCode: number;
+	signal?: string;
+	error?: string;
+};
+
+/** Foreground run failed before a duration could be recorded (e.g. spawn error). */
+export type BashToolOutputForegroundCaught = {
+	command: string;
+	cwd: string;
+	classification: BashToolCommandClassification;
+	background: false;
+	stdout: '';
+	stderr: '';
+	exitCode: number;
+	error: string;
+};
+
+export type BashToolOutput =
+	| BashToolOutputEarlyError
+	| BashToolOutputBackgroundStarted
+	| BashToolOutputBackgroundStartFailed
+	| BashToolOutputForeground
+	| BashToolOutputForegroundCaught;
 
 const READ_ONLY_COMMAND_PATTERNS = [
 	/^\s*(pwd|which|whereis|whoami|printenv)\b/i,
@@ -45,7 +117,7 @@ const SEARCH_COMMAND_PATTERNS = [/^\s*(grep|rg|find|fd)\b/i];
  * or contains common file/package/modification tools (e.g., \`mv\`, \`cp\`, \`sed\`, \`python\`, \`npm\`, \`git\`, \`chmod\`),
  * and \`unknown\` if none of the above apply.
  */
-function classifyCommand(command: string): CommandClassification {
+function classifyCommand(command: string): BashToolCommandClassification {
 	if (SEARCH_COMMAND_PATTERNS.some(pattern => pattern.test(command))) {
 		return 'search';
 	}
@@ -137,14 +209,14 @@ export const bashTool = tool({
 			.describe(
 				'Working directory for the command. Defaults to current directory.',
 			),
-		timeoutMs: z
+		timeoutSeconds: z
 			.number()
 			.int()
 			.positive()
-			.max(30 * 60_000) // Max 30 minutes
+			.max(30 * 60) // Max 30 minutes
 			.optional()
 			.describe(
-				'Maximum runtime before the command is terminated. Defaults to 10 minutes (600000ms).',
+				'Maximum runtime before the command is terminated, in seconds. Defaults to 600 (10 minutes).',
 			),
 		maxOutputChars: z
 			.number()
@@ -165,10 +237,11 @@ export const bashTool = tool({
 	async execute({
 		command,
 		cwd,
-		timeoutMs = DEFAULT_TIMEOUT_MS,
+		timeoutSeconds = DEFAULT_TIMEOUT_SECONDS,
 		maxOutputChars = DEFAULT_MAX_OUTPUT_CHARS,
 		background = false,
-	}) {
+	}): Promise<BashToolOutput> {
+		const timeoutMs = timeoutSeconds * 1000;
 		const resolvedCwd = cwd ? path.resolve(cwd) : process.cwd();
 		const classification = classifyCommand(command);
 
@@ -298,13 +371,13 @@ export const bashTool = tool({
 				)}\n${stderr}`;
 			}
 
-			return {
+			const out: BashToolOutputForeground = {
 				command,
 				cwd: resolvedCwd,
 				classification,
 				background: false,
 				durationMs: Date.now() - startedAt,
-				timeoutMs,
+				timeoutSeconds,
 				timedOut: timedOut || Boolean(result.timedOut),
 				aborted: false,
 				stdout: stdout.trimEnd(),
@@ -312,11 +385,12 @@ export const bashTool = tool({
 				stdoutTruncated,
 				stderrTruncated,
 				exitCode,
-				signal: result.signal,
-				...(result.failed && result.shortMessage
-					? {error: result.shortMessage}
-					: {}),
+				signal: result.signal ?? undefined,
 			};
+			if (result.failed && result.shortMessage) {
+				out.error = result.shortMessage;
+			}
+			return out;
 		} catch (error: unknown) {
 			const execaError = error as ExecaError;
 			return {
