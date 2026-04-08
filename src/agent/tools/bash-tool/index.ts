@@ -46,7 +46,8 @@ export type BashToolCommandClassification =
 	| 'read'
 	| 'search'
 	| 'mutating'
-	| 'unknown';
+	| 'unknown'
+	| 'refused';
 
 /** Working directory invalid or missing — no command was run. */
 export type BashToolOutputEarlyError = {
@@ -109,12 +110,24 @@ export type BashToolOutputForegroundCaught = {
 	error: string;
 };
 
+export type BashToolOutputRefused = {
+	command: string;
+	cwd: string;
+	classification: 'refused';
+	background: boolean;
+	stdout: '';
+	stderr: string;
+	exitCode: 1;
+	error: string;
+};
+
 export type BashToolOutput =
 	| BashToolOutputEarlyError
 	| BashToolOutputBackgroundStarted
 	| BashToolOutputBackgroundStartFailed
 	| BashToolOutputForeground
-	| BashToolOutputForegroundCaught;
+	| BashToolOutputForegroundCaught
+	| BashToolOutputRefused;
 
 const READ_ONLY_COMMAND_PATTERNS = [
 	/^\s*(pwd|which|whereis|whoami|printenv)\b/i,
@@ -129,12 +142,17 @@ const SEARCH_COMMAND_PATTERNS = [/^\s*(grep|rg|find|fd)\b/i];
  * Classifies a shell command as one of four categories describing its likely effect.
  *
  * @param command - The shell command string to classify.
- * @returns The classification: \`search\` if the command matches known search patterns,
- * \`read\` if it matches known read-only patterns, \`mutating\` if it matches dangerous patterns
- * or contains common file/package/modification tools (e.g., \`mv\`, \`cp\`, \`sed\`, \`python\`, \`npm\`, \`git\`, \`chmod\`),
+ * @returns The classification: \`refused\` if it matches known dangerous patterns,
+ * \`search\` if the command matches known search patterns, \`read\` if it matches
+ * known read-only patterns, \`mutating\` if it contains common file/package/modification
+ * tools (e.g., \`mv\`, \`cp\`, \`sed\`, \`python\`, \`npm\`, \`git\`, \`chmod\`),
  * and \`unknown\` if none of the above apply.
  */
 function classifyCommand(command: string): BashToolCommandClassification {
+	if (isDangerousCommand(command)) {
+		return 'refused';
+	}
+
 	if (SEARCH_COMMAND_PATTERNS.some(pattern => pattern.test(command))) {
 		return 'search';
 	}
@@ -143,15 +161,29 @@ function classifyCommand(command: string): BashToolCommandClassification {
 		return 'read';
 	}
 
-	if (isDangerousCommand(command)) {
-		return 'mutating';
-	}
-
 	return /\b(mv|cp|sed|perl|python|node|npm|pnpm|bun|git|touch|mkdir|chmod|chown)\b/i.test(
 		command,
 	)
 		? 'mutating'
 		: 'unknown';
+}
+
+function createDangerousCommandRefusal(
+	command: string,
+	cwd: string,
+	background: boolean,
+): BashToolOutputRefused {
+	const error = `Refusing to run dangerous command: ${command}`;
+	return {
+		command,
+		cwd,
+		classification: 'refused',
+		background,
+		stdout: '',
+		stderr: error,
+		exitCode: 1,
+		error,
+	};
 }
 
 /**
@@ -261,6 +293,13 @@ export const bashTool = tool({
 		const timeoutMs = timeoutSeconds * 1000;
 		const resolvedCwd = cwd ? path.resolve(cwd) : process.cwd();
 		const classification = classifyCommand(command);
+		if (classification === 'refused' || isDangerousCommand(command)) {
+			return createDangerousCommandRefusal(
+				command,
+				resolvedCwd,
+				background,
+			);
+		}
 
 		try {
 			const cwdStat = await fs.stat(resolvedCwd);
