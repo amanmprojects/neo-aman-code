@@ -5,6 +5,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { ChatSessionProvider } from "./hooks/chatSession";
 import { useLayoutChrome } from "./hooks/layoutChrome";
 import { ModelNameProvider } from "./hooks/modelName";
+import { TaskStateProvider } from "./hooks/taskState";
 import { VerboseProvider } from "./hooks/verbose";
 
 import { useChat } from "@ai-sdk/react";
@@ -87,19 +88,21 @@ function AppShell() {
       ) : (
         <box flexGrow={1} backgroundColor="#000000" height="100%" minHeight={0}>
           <ChatSessionProvider status={status}>
-            <ChatPage
-              messages={messages}
-              sessionTitle={sessionTitle}
-              cwdDisplay={cwdDisplay}
-              appLabel={appLabel}
-              version={version}
-              inputValue={inputValue}
-              onInputChange={setInputValue}
-              onSubmit={handleSubmit}
-              showSidebar={showSidebar}
-              showFooter={showFooter}
-              status={status}
-            />
+            <TaskStateProvider messages={messages}>
+              <ChatPage
+                messages={messages}
+                sessionTitle={sessionTitle}
+                cwdDisplay={cwdDisplay}
+                appLabel={appLabel}
+                version={version}
+                inputValue={inputValue}
+                onInputChange={setInputValue}
+                onSubmit={handleSubmit}
+                showSidebar={showSidebar}
+                showFooter={showFooter}
+                status={status}
+              />
+            </TaskStateProvider>
           </ChatSessionProvider>
         </box>
       )}
