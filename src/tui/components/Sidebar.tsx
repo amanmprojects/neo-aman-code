@@ -1,4 +1,5 @@
 import { TextAttributes } from "@opentui/core";
+import type { TaskStatus } from "../../agent/tools/task/taskListState";
 import { useTaskState } from "../hooks/taskState";
 import { theme } from "../theme";
 
@@ -15,15 +16,21 @@ export function Sidebar({
 }: SidebarProps) {
   const { tasks, openCount, completedCount, blockedCount } = useTaskState();
 
-  function statusColor(status: string) {
+  function assertNever(value: never): never {
+    throw new Error(`Unhandled task status: ${value}`);
+  }
+
+  function statusColor(status: TaskStatus) {
     switch (status) {
+      case "pending":
+        return theme.orange;
       case "completed":
         return theme.green;
       case "in_progress":
         return theme.accent;
-      default:
-        return theme.orange;
     }
+
+    return assertNever(status);
   }
 
   return (

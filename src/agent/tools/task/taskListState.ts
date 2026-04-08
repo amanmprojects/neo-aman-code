@@ -28,6 +28,7 @@ type TaskListStore = {
 	tasks: Map<string, TaskRecord>;
 	order: string[];
 	nextId: number;
+	expiresAt: number;
 };
 
 type TaskUpdateInput = {
@@ -42,7 +43,11 @@ type TaskUpdateInput = {
 	addBlockedBy?: string[];
 };
 
+const TASK_LIST_TTL_MS = 30 * 60 * 1000;
+const TASK_LIST_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
 const taskLists = new Map<string, TaskListStore>();
+let taskListCleanupTimer: ReturnType<typeof setInterval> | undefined;
 
 function cloneTask(task: TaskRecord): TaskRecord {
 	return {
@@ -53,8 +58,53 @@ function cloneTask(task: TaskRecord): TaskRecord {
 	};
 }
 
-function getOrCreateStore(sessionId: string): TaskListStore {
+function touchTaskList(store: TaskListStore): void {
+	store.expiresAt = Date.now() + TASK_LIST_TTL_MS;
+}
+
+function stopTaskListCleanupIfIdle(): void {
+	if (taskLists.size > 0 || taskListCleanupTimer === undefined) {
+		return;
+	}
+
+	clearInterval(taskListCleanupTimer);
+	taskListCleanupTimer = undefined;
+}
+
+function sweepExpiredTaskLists(now: number = Date.now()): void {
+	for (const [sessionId, store] of taskLists) {
+		if (store.expiresAt <= now) {
+			taskLists.delete(sessionId);
+		}
+	}
+
+	stopTaskListCleanupIfIdle();
+}
+
+function scheduleTaskListCleanup(): void {
+	if (taskListCleanupTimer !== undefined) {
+		return;
+	}
+
+	taskListCleanupTimer = setInterval(() => {
+		sweepExpiredTaskLists();
+	}, TASK_LIST_SWEEP_INTERVAL_MS);
+	taskListCleanupTimer.unref?.();
+}
+
+function getTaskList(sessionId: string): TaskListStore | undefined {
+	sweepExpiredTaskLists();
 	const existing = taskLists.get(sessionId);
+	if (existing) {
+		touchTaskList(existing);
+		return existing;
+	}
+
+	return undefined;
+}
+
+function getOrCreateTaskList(sessionId: string): TaskListStore {
+	const existing = getTaskList(sessionId);
 	if (existing) {
 		return existing;
 	}
@@ -63,9 +113,12 @@ function getOrCreateStore(sessionId: string): TaskListStore {
 		tasks: new Map<string, TaskRecord>(),
 		order: [],
 		nextId: 1,
+		expiresAt: 0,
 	};
+	touchTaskList(created);
 
 	taskLists.set(sessionId, created);
+	scheduleTaskListCleanup();
 	return created;
 }
 
@@ -92,6 +145,12 @@ export function getTaskSessionId(toolOptions?: ToolExecutionOptions): string {
 	return context?.sessionId ?? 'default';
 }
 
+export function removeTaskList(sessionId: string): boolean {
+	const removed = taskLists.delete(sessionId);
+	stopTaskListCleanupIfIdle();
+	return removed;
+}
+
 export function createTaskRecord(
 	sessionId: string,
 	input: {
@@ -103,7 +162,7 @@ export function createTaskRecord(
 		priority?: TaskPriority;
 	},
 ): TaskRecord {
-	const store = getOrCreateStore(sessionId);
+	const store = getOrCreateTaskList(sessionId);
 	const task: TaskRecord = {
 		id: String(store.nextId++),
 		subject: input.subject,
@@ -125,12 +184,16 @@ export function getTaskRecord(
 	sessionId: string,
 	taskId: string,
 ): TaskRecord | undefined {
-	const task = getOrCreateStore(sessionId).tasks.get(taskId);
+	const task = getTaskList(sessionId)?.tasks.get(taskId);
 	return task ? cloneTask(task) : undefined;
 }
 
 export function listTaskRecords(sessionId: string): TaskRecord[] {
-	const store = getOrCreateStore(sessionId);
+	const store = getTaskList(sessionId);
+	if (!store) {
+		return [];
+	}
+
 	return store.order
 		.map(id => store.tasks.get(id))
 		.filter((task): task is TaskRecord => task !== undefined)
@@ -138,7 +201,11 @@ export function listTaskRecords(sessionId: string): TaskRecord[] {
 }
 
 export function deleteTaskRecord(sessionId: string, taskId: string): boolean {
-	const store = getOrCreateStore(sessionId);
+	const store = getTaskList(sessionId);
+	if (!store) {
+		return false;
+	}
+
 	if (!store.tasks.has(taskId)) {
 		return false;
 	}
@@ -165,7 +232,15 @@ export function updateTaskRecord(
 	statusChange?: {from: TaskStatus; to: TaskStatus};
 	error?: string;
 } {
-	const store = getOrCreateStore(sessionId);
+	const store = getTaskList(sessionId);
+	if (!store) {
+		return {
+			success: false,
+			updatedFields: [],
+			error: 'Task not found',
+		};
+	}
+
 	const existing = store.tasks.get(taskId);
 	if (!existing) {
 		return {
@@ -279,7 +354,7 @@ export function replaceTasksFromTodos(
 	sessionId: string,
 	todos: TodoItem[],
 ): TodoItem[] {
-	const store = getOrCreateStore(sessionId);
+	const store = getOrCreateTaskList(sessionId);
 	const nextTodos = todos.every(todo => todo.status === 'completed')
 		? []
 		: todos;

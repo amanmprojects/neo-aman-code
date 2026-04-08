@@ -1,5 +1,5 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NewChatPage } from "./pages/NewChatPage";
 import { ChatPage } from "./pages/ChatPage";
 import { ChatSessionProvider } from "./hooks/chatSession";
@@ -12,6 +12,7 @@ import { useChat } from "@ai-sdk/react";
 import { DirectChatTransport } from "ai";
 
 import { agent, type AgentUIMessage } from "../agent";
+import { removeTaskList } from "../agent/tools/task/taskListState";
 
 import pkg from "../../package.json" with { type: "json" };
 
@@ -37,7 +38,8 @@ function sessionTitleFrom(messages: AgentUIMessage[]): string {
 
 function AppShell() {
   const { width: termWidth } = useTerminalDimensions();
-  const [inputValue, setInputValue] = useState("");
+  const [ inputValue, setInputValue] = useState("");
+  const [blockedSubmissionMessage, setBlockedSubmissionMessage] = useState<string | null>(null);
   const { showSidebar, showFooter } = useLayoutChrome();
 
   const { messages, sendMessage, status } = useChat<AgentUIMessage>({
@@ -53,22 +55,59 @@ function AppShell() {
     [messages],
   );
 
+  const handleInputChange = useCallback((value: string) => {
+    if (blockedSubmissionMessage) {
+      setBlockedSubmissionMessage(null);
+    }
+    setInputValue(value);
+  }, [blockedSubmissionMessage]);
+
+  useEffect(() => {
+    return () => {
+      removeTaskList("default");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!blockedSubmissionMessage) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setBlockedSubmissionMessage(null);
+    }, 1800);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [blockedSubmissionMessage]);
+
   const handleSubmit = useCallback(
     (raw: string) => {
       const text = raw.trim();
       if (!text) return;
 
-      if (status === "ready" || status === "error") {
-        setInputValue("");
-        sendMessage({ text });
+      if (status === "streaming" || status === "submitted") {
+        setBlockedSubmissionMessage("Wait for the current response to finish before sending another message.");
+        return;
       }
 
+      if (status !== "ready" && status !== "error") {
+        return;
+      }
+
+      setBlockedSubmissionMessage(null);
+      setInputValue("");
+      sendMessage({ text });
     },
     [sendMessage, status],
   );
 
   useKeyboard((key) => {
     if (key.name === "escape") setInputValue("");
+    if (key.ctrl && key.name === 'j') setInputValue((val) => {
+      return val + "\n";
+    });
   });
 
   return (
@@ -80,9 +119,11 @@ function AppShell() {
             cwdDisplay={cwdDisplay}
             version={version}
             inputValue={inputValue}
-            onInputChange={setInputValue}
+            onInputChange={handleInputChange}
             onSubmit={handleSubmit}
             showFooter={showFooter}
+            status={status}
+            blockedMessage={blockedSubmissionMessage}
           />
         </box>
       ) : (
@@ -96,11 +137,12 @@ function AppShell() {
                 appLabel={appLabel}
                 version={version}
                 inputValue={inputValue}
-                onInputChange={setInputValue}
+                onInputChange={handleInputChange}
                 onSubmit={handleSubmit}
                 showSidebar={showSidebar}
                 showFooter={showFooter}
                 status={status}
+                blockedMessage={blockedSubmissionMessage}
               />
             </TaskStateProvider>
           </ChatSessionProvider>

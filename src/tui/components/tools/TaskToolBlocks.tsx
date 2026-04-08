@@ -13,6 +13,10 @@ function renderFrame(content: string, bordered: boolean = true) {
     );
 }
 
+function normalizeTaskSubject(subject: string): string {
+    return subject.replace(/(?:\r\n|\r|\n)+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function formatTask(task: {
     id: string;
     subject: string;
@@ -20,7 +24,7 @@ function formatTask(task: {
     blockedBy?: string[];
     owner?: string;
 }) {
-    const parts = [`#${task.id}`, task.subject];
+    const parts = [`#${task.id}`, normalizeTaskSubject(task.subject)];
     if (task.status) {
         parts.push(task.status);
     }
@@ -38,13 +42,15 @@ export function TaskCreateToolBlock({ invocation }: { invocation: TaskCreateTool
         case "input-streaming":
             return renderFrame("taskCreate — reading arguments…", false);
         case "input-available":
-            return renderFrame(`taskCreate — ${invocation.input.subject ?? "(subject)"}`);
+            return renderFrame(
+                `taskCreate — ${normalizeTaskSubject(invocation.input.subject ?? "(subject)")}`,
+            );
         case "output-available":
             if (!invocation.output.task) {
                 return renderFrame("taskCreate — no task returned");
             }
             return renderFrame(
-                `taskCreate — created #${invocation.output.task.id} — ${invocation.output.task.subject}`,
+                `taskCreate — created #${invocation.output.task.id} — ${normalizeTaskSubject(invocation.output.task.subject)}`,
             );
         case "output-error":
             return renderFrame(`taskCreate — error: ${invocation.errorText}`);

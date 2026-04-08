@@ -19,6 +19,7 @@ type ChatPageProps = {
   showSidebar: boolean;
   showFooter: boolean;
   status: "ready" | "streaming" | "submitted" | "error";
+  blockedMessage?: string | null;
 };
 
 export function ChatPage({
@@ -33,6 +34,7 @@ export function ChatPage({
   showSidebar,
   showFooter,
   status,
+  blockedMessage,
 }: ChatPageProps) {
 
   return (
@@ -57,6 +59,7 @@ export function ChatPage({
             placeholder={INPUT_PLACEHOLDER}
             focused
             status={status}
+            blockedMessage={blockedMessage}
           />
           {showFooter && (
             <box marginTop={0} border={["top"]} borderColor={theme.bg} borderStyle="single">

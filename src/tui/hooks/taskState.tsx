@@ -45,7 +45,7 @@ function dedupe(values: string[]): string[] {
 
 function deriveTaskState(messages: AgentUIMessage[]): TaskSidebarState {
   const tasks = new Map<string, SidebarTask>();
-  const order: string[] = [];
+  const order = new Set<string>();
 
   function touchTask(
     id: string,
@@ -60,8 +60,8 @@ function deriveTaskState(messages: AgentUIMessage[]): TaskSidebarState {
     };
     tasks.set(id, next);
 
-    if (appendToOrder && !order.includes(id)) {
-      order.push(id);
+    if (appendToOrder && !order.has(id)) {
+      order.add(id);
     }
 
     return next;
@@ -69,10 +69,7 @@ function deriveTaskState(messages: AgentUIMessage[]): TaskSidebarState {
 
   function removeTask(id: string) {
     tasks.delete(id);
-    const index = order.indexOf(id);
-    if (index >= 0) {
-      order.splice(index, 1);
-    }
+    order.delete(id);
     for (const task of tasks.values()) {
       task.blockedBy = task.blockedBy.filter(blockerId => blockerId !== id);
     }
@@ -138,7 +135,8 @@ function deriveTaskState(messages: AgentUIMessage[]): TaskSidebarState {
           for (const [id, task] of nextMap) {
             tasks.set(id, task);
           }
-          order.splice(0, order.length, ...nextOrder);
+          order.clear();
+          nextOrder.forEach(id => order.add(id));
           break;
         }
         case "tool-taskUpdate": {
@@ -189,7 +187,7 @@ function deriveTaskState(messages: AgentUIMessage[]): TaskSidebarState {
     }
   }
 
-  const orderedTasks = order
+  const orderedTasks = Array.from(order)
     .map(id => tasks.get(id))
     .filter((task): task is SidebarTask => task !== undefined);
 

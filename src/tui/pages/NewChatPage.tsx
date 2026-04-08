@@ -17,6 +17,8 @@ type NewChatPageProps = {
   onInputChange: (value: string) => void;
   onSubmit: (value: string) => void;
   showFooter: boolean;
+  status: "ready" | "streaming" | "submitted" | "error";
+  blockedMessage?: string | null;
 };
 
 export function NewChatPage({
@@ -27,6 +29,8 @@ export function NewChatPage({
   onInputChange,
   onSubmit,
   showFooter,
+  status,
+  blockedMessage,
 }: NewChatPageProps) {
   const omnibarWidth = Math.min(75, Math.max(36, Math.floor(termWidth * 0.9)));
 
@@ -49,6 +53,8 @@ export function NewChatPage({
           onSubmit={onSubmit}
           placeholder={INPUT_PLACEHOLDER}
           focused
+          status={status}
+          blockedMessage={blockedMessage}
         />
         <ComposerShortcuts width={omnibarWidth} />
         <box marginTop={2}>
