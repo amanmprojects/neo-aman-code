@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {execa, type ExecaError} from 'execa';
 import treeKill from 'tree-kill';
@@ -335,3 +335,5 @@ export const bashTool = tool({
 		}
 	},
 });
+
+export type BashToolInvocation = UIToolInvocation<typeof bashTool>;

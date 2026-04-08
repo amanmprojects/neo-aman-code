@@ -2,7 +2,7 @@ import {execFile} from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {z} from 'zod';
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
 import {applyHeadLimit, getPreStatLimit} from '../../utils/head-limit.js';
 import {getGrepSearchDescription} from './prompt.js';
@@ -593,3 +593,5 @@ export const grepSearch = tool({
 		}
 	},
 });
+
+export type GrepSearchToolInvocation = UIToolInvocation<typeof grepSearch>;

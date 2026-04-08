@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
 import {getGlobSearchDescription} from './prompt.js';
@@ -355,8 +355,12 @@ export const globSearch = tool({
 				truncated,
 				results: filenames,
 			};
-		} catch (error: any) {
-			return {error: `Search failed: ${error.message}`};
+		} catch (error: unknown) {
+			const msg =
+				error instanceof Error ? error.message : String(error);
+			return {error: `Search failed: ${msg}`};
 		}
 	},
 });
+
+export type GlobSearchToolInvocation = UIToolInvocation<typeof globSearch>;

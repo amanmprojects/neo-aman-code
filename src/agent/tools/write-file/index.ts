@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {tool} from 'ai';
 import {z} from 'zod';
-import {isBlockedDevicePath, isUNCPath} from '../path-guards.js';
+import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
 import {getWriteFileDescription} from './prompt.js';
 
 export const writeFile = tool({
