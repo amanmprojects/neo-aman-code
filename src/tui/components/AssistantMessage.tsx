@@ -1,7 +1,23 @@
+import type { ReasoningUIPart, TextUIPart } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import { theme } from "../theme";
-import type { DynamicToolUIPart, ReasoningUIPart, TextUIPart, UIMessage } from "ai";
+import { AssistantMessageFrame, AssistantReasoningFrame } from "./MessageFrames";
 import { MessageFrame } from "./MessageFrame";
 import { syntaxStyleForAssistantMarkdown } from "../assistantMarkdown";
+import { ListDirToolBlock } from "./tools/ListDirToolBlock";
+import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
+import { GlobSearchToolBlock } from "./tools/GlobSearchToolBlock";
+import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
+import { WriteFileToolBlock } from "./tools/WriteFileToolBlock";
+import { EditFileToolBlock } from "./tools/EditFileToolBlock";
+import { BashToolBlock } from "./tools/BashToolBlock";
+import {
+    TaskCreateToolBlock,
+    TaskGetToolBlock,
+    TaskListToolBlock,
+    TaskUpdateToolBlock,
+} from "./tools/TaskToolBlocks";
+import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
 const markdownSyntaxReasoning = syntaxStyleForAssistantMarkdown("reasoning");
@@ -14,23 +30,13 @@ function AssistantReasoningPart({
     streaming: boolean;
 }) {
     return (
-        <MessageFrame borderColor={theme.panel} border={["left"]}>
+        <AssistantReasoningFrame>
             <markdown
                 content={part.text}
                 syntaxStyle={markdownSyntaxReasoning}
                 streaming={streaming}
             />
-        </MessageFrame>
-    );
-}
-
-function AssistantDynamicToolPart({ part }: { part: DynamicToolUIPart }) {
-    return (
-        <MessageFrame border={false}>
-            <text fg={theme.muted}>
-                {part.toolName}: {part.state}
-            </text>
-        </MessageFrame>
+        </AssistantReasoningFrame>
     );
 }
 
@@ -42,17 +48,17 @@ function AssistantTextPart({
     streaming: boolean;
 }) {
     return (
-        <MessageFrame border={["left"]} borderColor={theme.bg}>
+        <AssistantMessageFrame>
             <markdown
                 content={part.text}
                 syntaxStyle={markdownSyntaxBody}
                 streaming={streaming}
             />
-        </MessageFrame>
+        </AssistantMessageFrame>
     );
 }
 
-function AssistantUnknownPart({ part }: { part: UIMessage["parts"][number] }) {
+function AssistantUnknownPart({ part }: { part: AgentUIMessage["parts"][number] }) {
     return (
         <MessageFrame border={false}>
             <text fg={theme.muted}>Unknown part type: {part.type}</text>
@@ -64,7 +70,7 @@ export function AssistantMessage({
     message,
     markdownStreaming,
 }: {
-    message: UIMessage;
+    message: AgentUIMessage;
     markdownStreaming: boolean;
 }) {
     return (
@@ -88,8 +94,32 @@ export function AssistantMessage({
                                 streaming={markdownStreaming}
                             />
                         );
-                    case "dynamic-tool":
-                        return <AssistantDynamicToolPart key={key} part={part} />;
+                    case "tool-listDir":
+                        return <ListDirToolBlock key={key} invocation={part} />;
+                    case "tool-readFile":
+                        return <ReadFileToolBlock key={key} invocation={part} />;
+                    case "tool-writeFile":
+                        return <WriteFileToolBlock key={key} invocation={part} />;
+                    case "tool-editFile":
+                        return <EditFileToolBlock key={key} invocation={part} />;
+                    case "tool-tavilySearch":
+                        return <TavilySearchToolBlock key={key} invocation={part} />;
+                    case "tool-tavilyExtract":
+                        return <TavilyExtractToolBlock key={key} invocation={part} />;
+                    case "tool-globSearch":
+                        return <GlobSearchToolBlock key={key} invocation={part} />;
+                    case "tool-grepSearch":
+                        return <GrepSearchToolBlock key={key} invocation={part} />;
+                    case "tool-bashTool":
+                        return <BashToolBlock key={key} invocation={part} />;
+                    case "tool-taskCreate":
+                        return <TaskCreateToolBlock key={key} invocation={part} />;
+                    case "tool-taskGet":
+                        return <TaskGetToolBlock key={key} invocation={part} />;
+                    case "tool-taskList":
+                        return <TaskListToolBlock key={key} invocation={part} />;
+                    case "tool-taskUpdate":
+                        return <TaskUpdateToolBlock key={key} invocation={part} />;
                     case "step-start":
                         return null;
                     default:

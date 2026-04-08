@@ -1,0 +1,23 @@
+export const grepSearchToolName = 'grepSearch';
+
+/**
+ * Renders the grepSearch tool description with detailed usage instructions.
+ */
+export function getGrepSearchDescription(): string {
+	return `A powerful search tool built on ripgrep
+
+Usage:
+- ALWAYS use grepSearch for content search tasks. Use globSearch for filename/path search and listDir for directory listing. Do not invoke \`grep\` or \`rg\` via \`bashTool\` when these concrete search tools are the right fit.
+- Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
+- Filter files with includes parameter (e.g., "*.js", "**/*.tsx") or type parameter (e.g., "js", "py", "rust")
+- Output modes: "content" shows matching lines, "files_with_matches" shows only file paths (default), "count" shows match counts
+- For open-ended searches, make multiple grepSearch calls and refine the pattern or filters between calls
+- Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use \`interface\\{}\` to find \`interface{}\` in Go code)
+- Multiline matching: By default patterns match within single lines only. For cross-line patterns, use \`multiline: true\`
+- Use context, contextBefore, contextAfter to show lines around matches
+- Results are sorted by modification time when using files_with_matches mode
+- Supports case-sensitive and case-insensitive search
+- Supports fixed string matching (treat pattern as literal instead of regex)
+- The path/searchPath parameters should be absolute paths. If omitted, the tool uses the current working directory absolute path.
+- File paths in results are returned as absolute paths`;
+}

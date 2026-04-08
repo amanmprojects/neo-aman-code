@@ -1,12 +1,18 @@
 import type { InputProps } from "@opentui/react";
+import { useMemo } from "react";
 import { theme } from "../theme";
 import { useModelName } from "../hooks/modelName";
+import { createColors, createFrames } from "./spinner/knightRider";
+import "opentui-spinner/react";
+import { CommandBar } from "./CommandsBar";
 
 type OmnibarProps = {
   width: number | "100%";
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  status: "ready" | "streaming" | "submitted" | "error";
+  blockedMessage?: string | null;
   placeholder: string;
   focused?: boolean;
 };
@@ -18,45 +24,106 @@ export function Omnibar({
   onSubmit,
   placeholder,
   focused = true,
+  status = "ready",
+  blockedMessage,
 }: OmnibarProps) {
   const modelName = useModelName();
 
+  const knightRiderSpinner = useMemo(
+    () => ({
+      frames: createFrames({
+        color: theme.accent,
+        style: "blocks",
+        inactiveFactor: 0.6,
+        minAlpha: 0.3,
+      }),
+      color: createColors({
+        color: theme.accent,
+        style: "blocks",
+        inactiveFactor: 0.6,
+        minAlpha: 0.3,
+      }),
+    }),
+    [theme.accent],
+  );
+
   return (
-    <box flexDirection="row" width={width} alignItems="stretch"
-      border={['left']}
-      borderColor={theme.accent}
-      focusedBorderColor={'red'}
-      borderStyle="heavy"
-    >
+    <box flexDirection="column" alignItems="stretch" width={width}>
       <box
-        flexGrow={1}
-        flexShrink={1}
-        paddingX={2}
-        flexDirection="column"
-        gap={1}
-        border={['top', 'bottom']}
-        borderColor={theme.panel}
-        borderStyle="single"
-        backgroundColor={theme.panel}
+        position="relative"
+        width="100%"
+        flexShrink={0}
+        overflow="visible"
       >
-        <input
-          value={value}
-          onInput={onChange}
-          onSubmit={onSubmit as NonNullable<InputProps["onSubmit"]>}
-          placeholder={placeholder}
-          focused={focused}
-          backgroundColor={theme.panel}
-          textColor={theme.text}
-          placeholderColor={theme.muted}
-          cursorColor={theme.cursor}
-        />
-        <text fg={theme.dim}>
-          <span fg={theme.accent}>Build</span>
-          {"  "}
-          <span fg={theme.text}>{modelName}</span>
-          {" · "}
-          <span fg={theme.orange}>xhigh</span>
-        </text>
+        <box
+          flexDirection="row"
+          width="100%"
+          alignItems="stretch"
+          border={["left"]}
+          borderColor={theme.accent}
+          borderStyle="heavy"
+        >
+          <box
+            flexGrow={1}
+            flexShrink={1}
+            paddingX={2}
+            flexDirection="column"
+            gap={1}
+            border={["top", "bottom"]}
+            borderColor={theme.panel}
+            borderStyle="single"
+            backgroundColor={theme.panel}
+          >
+            <input
+              value={value}
+              onInput={onChange}
+              onSubmit={onSubmit as NonNullable<InputProps["onSubmit"]>}
+              placeholder={placeholder}
+              focused={focused}
+              backgroundColor={theme.panel}
+              textColor={theme.text}
+              placeholderColor={theme.muted}
+              cursorColor={theme.cursor}
+            />
+            <box flexDirection="row" alignItems="center" gap={1}>
+              <text fg={theme.dim} flexShrink={1}>
+                <span fg={theme.accent}>Build</span>
+                {"  "}
+                <span fg={theme.text}>{modelName}</span>
+                {" · "}
+                <span fg={theme.orange}>xhigh</span>
+              </text>
+              {status !== "ready" && status !== "error" ? (
+                <spinner
+                  color={knightRiderSpinner.color}
+                  frames={knightRiderSpinner.frames}
+                  interval={40}
+                  autoplay
+                />
+              ) : null}
+            </box>
+            {blockedMessage ? (
+              <text fg={theme.orange}>{blockedMessage}</text>
+            ) : null}
+          </box>
+        </box>
+
+        {value.startsWith("/") ? (
+          <box
+            position="absolute"
+            left={0}
+            right={0}
+            bottom="100%"
+            marginBottom={0}
+            zIndex={100}
+            overflow="visible"
+            border={["left"]}
+            borderColor={theme.panel}
+            borderStyle="heavy"
+          >
+            <CommandBar />
+          </box>
+        ) : null}
       </box>
     </box>
   );

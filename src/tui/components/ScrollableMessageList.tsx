@@ -1,14 +1,15 @@
-import type { UIMessage } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import type { ScrollAcceleration } from "@opentui/core";
 import { theme } from "../theme";
 import { UserMessage } from "./UserMessage";
 import { AssistantMessage } from "./AssistantMessage";
+import { AssistantMessageFrame } from "./MessageFrames";
 import { MessageFrame } from "./MessageFrame";
 import { useChatSessionStatus } from "../hooks/chatSession";
 import { useModelName } from "../hooks/modelName";
 
 type ScrollableMessageListProps = {
-    messages: UIMessage[];
+    messages: AgentUIMessage[];
     /** When false (default), system-role messages are omitted; they are provider/internal context, not user-visible chat. */
     showSystemMessages?: boolean;
 };
@@ -25,7 +26,7 @@ const messageListScrollAcceleration: ScrollAcceleration = {
 
 const MAX_PREVIEW_LENGTH = 200;
 
-function systemMessagePreview(message: UIMessage): string {
+function systemMessagePreview(message: AgentUIMessage): string {
     const parts = message.parts ?? [];
     const texts = parts
         .filter((p): p is { type: "text"; text: string } => p.type === "text")
@@ -92,12 +93,12 @@ export function ScrollableMessageList({
                     );
                 })}
 
-                <MessageFrame border={['left']} borderColor={theme.bg}>
+                <AssistantMessageFrame>
                     <text fg={theme.text}>
                         <span fg={theme.accent}>▣</span>
                         {` Build · ${modelName}`}
                     </text>
-                </MessageFrame>
+                </AssistantMessageFrame>
             </box>
         </scrollbox>
     );

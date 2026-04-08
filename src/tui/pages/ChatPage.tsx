@@ -2,12 +2,12 @@ import { theme } from "../theme";
 import { AppFooter } from "../components/AppFooter";
 import { Omnibar } from "../components/Omnibar";
 import { Sidebar } from "../components/Sidebar";
-import type { UIMessage } from "ai";
+import type { AgentUIMessage } from "../../agent";
 import { ScrollableMessageList } from "../components/ScrollableMessageList";
 const INPUT_PLACEHOLDER = "Message…";
 
 type ChatPageProps = {
-  messages: UIMessage[];
+  messages: AgentUIMessage[];
   sessionTitle: string;
   cwdDisplay: string;
   appLabel: string;
@@ -18,6 +18,8 @@ type ChatPageProps = {
   onSubmit: (value: string) => void;
   showSidebar: boolean;
   showFooter: boolean;
+  status: "ready" | "streaming" | "submitted" | "error";
+  blockedMessage?: string | null;
 };
 
 export function ChatPage({
@@ -31,6 +33,8 @@ export function ChatPage({
   onSubmit,
   showSidebar,
   showFooter,
+  status,
+  blockedMessage,
 }: ChatPageProps) {
 
   return (
@@ -54,6 +58,8 @@ export function ChatPage({
             onSubmit={onSubmit}
             placeholder={INPUT_PLACEHOLDER}
             focused
+            status={status}
+            blockedMessage={blockedMessage}
           />
           {showFooter && (
             <box marginTop={0} border={["top"]} borderColor={theme.bg} borderStyle="single">

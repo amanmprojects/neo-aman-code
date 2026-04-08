@@ -1,0 +1,80 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import {tool, type UIToolInvocation} from 'ai';
+import {z} from 'zod';
+import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
+import {getWriteFileDescription} from './prompt.js';
+
+export const writeFile = tool({
+	description: getWriteFileDescription(),
+	inputSchema: z.object({
+		filePath: z
+			.string()
+			.describe(
+				'Absolute path to the file to write. Relative inputs are resolved against the current working directory for compatibility but should not be used intentionally.',
+			),
+		content: z.string().describe('The full content to write to the file'),
+		overwrite: z
+			.boolean()
+			.optional()
+			.describe(
+				'If true, allow overwriting an existing file. Defaults to false.',
+			),
+	}),
+	async execute({filePath, content, overwrite = false}) {
+		try {
+			const resolved = path.resolve(filePath);
+			const dir = path.dirname(resolved);
+
+			if (isUNCPath(resolved)) {
+				return {
+					error: `Cannot write UNC path: ${filePath}. Use a local path instead.`,
+				};
+			}
+
+			if (await isBlockedDevicePath(resolved)) {
+				return {
+					error: `Cannot write device file: ${filePath}. This file would block or produce infinite output.`,
+				};
+			}
+
+			await fs.mkdir(dir, {recursive: true});
+
+			try {
+				await fs.writeFile(resolved, content, {
+					encoding: 'utf-8',
+					flag: overwrite ? 'w' : 'wx',
+				});
+			} catch (error: unknown) {
+				const errorRecord = error as {code?: string};
+				if (errorRecord.code === 'EEXIST') {
+					return {
+						error: `File already exists: ${resolved}. Re-run writeFile with overwrite: true to replace it, or use editFile for a targeted change.`,
+					};
+				}
+
+				if (errorRecord.code === 'EISDIR') {
+					return {
+						error: `Cannot write file because the path is a directory: ${resolved}`,
+					};
+				}
+
+				throw error instanceof Error ? error : new Error(String(error));
+			}
+
+			const lines = content === '' ? 0 : content.split('\n').length;
+			return {
+				filePath: resolved,
+				action: overwrite ? 'written' : 'created',
+				overwrite,
+				lines,
+				bytes: Buffer.byteLength(content, 'utf-8'),
+			};
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			return {error: `Failed to write file: ${message}`};
+		}
+	},
+});
+
+export type WriteFileToolInvocation = UIToolInvocation<typeof writeFile>;
