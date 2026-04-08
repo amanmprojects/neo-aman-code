@@ -1,4 +1,5 @@
 import { TextAttributes } from "@opentui/core";
+import { useTaskState } from "../hooks/taskState";
 import { theme } from "../theme";
 
 type SidebarProps = {
@@ -12,6 +13,19 @@ export function Sidebar({
   cwdDisplay,
   appLabel,
 }: SidebarProps) {
+  const { tasks, openCount, completedCount, blockedCount } = useTaskState();
+
+  function statusColor(status: string) {
+    switch (status) {
+      case "completed":
+        return theme.green;
+      case "in_progress":
+        return theme.accent;
+      default:
+        return theme.orange;
+    }
+  }
+
   return (
     <box
       width={40}
@@ -47,7 +61,53 @@ export function Sidebar({
         <span fg={theme.green}>•</span> eslint
       </text>
 
-      <box flexGrow={1} minHeight={1} />
+      <text fg={theme.muted}>
+        <strong>Tasks</strong>
+      </text>
+      <text attributes={TextAttributes.DIM} fg={theme.dim}>
+        {openCount} open
+        <br />
+        {blockedCount} blocked
+        <br />
+        {completedCount} completed
+      </text>
+
+      <scrollbox
+        flexGrow={1}
+        minHeight={0}
+        scrollY
+        rootOptions={{ backgroundColor: theme.sidebarBg }}
+        viewportOptions={{ backgroundColor: theme.sidebarBg }}
+        contentOptions={{ backgroundColor: theme.sidebarBg }}
+      >
+        <box flexDirection="column" gap={1} minWidth={0} width="100%">
+          {tasks.length === 0 ? (
+            <text attributes={TextAttributes.DIM} fg={theme.dim}>
+              No tasks yet
+            </text>
+          ) : (
+            tasks.map((task) => (
+              <box key={task.id} flexDirection="column" minWidth={0}>
+                <text fg={statusColor(task.status)}>
+                  <strong>#{task.id}</strong>
+                  {` ${task.status}`}
+                </text>
+                <text fg={theme.text}>{task.subject}</text>
+                {task.owner ? (
+                  <text attributes={TextAttributes.DIM} fg={theme.dim}>
+                    owner={task.owner}
+                  </text>
+                ) : null}
+                {task.blockedBy.length > 0 ? (
+                  <text attributes={TextAttributes.DIM} fg={theme.orange}>
+                    blocked by {task.blockedBy.map(id => `#${id}`).join(", ")}
+                  </text>
+                ) : null}
+              </box>
+            ))
+          )}
+        </box>
+      </scrollbox>
 
       <text attributes={TextAttributes.DIM} fg={theme.dim}>
         {cwdDisplay}
