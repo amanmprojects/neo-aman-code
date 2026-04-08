@@ -56,10 +56,14 @@ function AppShell() {
     (raw: string) => {
       const text = raw.trim();
       if (!text) return;
-      setInputValue("");
-      sendMessage({ text });
+
+      if (status === "ready") {
+        setInputValue("");
+        sendMessage({ text });
+      }
+
     },
-    [sendMessage],
+    [sendMessage, status],
   );
 
   useKeyboard((key) => {
