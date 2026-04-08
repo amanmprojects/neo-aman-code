@@ -8,6 +8,7 @@ import { ListDirToolBlock } from "./tools/ListDirToolBlock";
 import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
 import { GlobSearchToolBlock } from "./tools/GlobSearchToolBlock";
 import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
+import { WriteFileToolBlock } from "./tools/WriteFileToolBlock";
 import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
@@ -89,6 +90,8 @@ export function AssistantMessage({
                         return <ListDirToolBlock key={key} invocation={part} />;
                     case "tool-readFile":
                         return <ReadFileToolBlock key={key} invocation={part} />;
+                    case "tool-writeFile":
+                        return <WriteFileToolBlock key={key} invocation={part} />;
                     case "tool-tavilySearch":
                         return <TavilySearchToolBlock key={key} invocation={part} />;
                     case "tool-tavilyExtract":

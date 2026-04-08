@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {tool} from 'ai';
+import {tool, type UIToolInvocation} from 'ai';
 import {z} from 'zod';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
 import {getWriteFileDescription} from './prompt.js';
@@ -73,3 +73,5 @@ export const writeFile = tool({
 		}
 	},
 });
+
+export type WriteFileToolInvocation = UIToolInvocation<typeof writeFile>;
