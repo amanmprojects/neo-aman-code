@@ -1,7 +1,7 @@
 import type {Stats} from 'node:fs';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {tool, type UIToolInvocation} from 'ai';
+import {tool} from 'ai';
 import {z} from 'zod';
 import {createPatch} from 'diff';
 import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
@@ -209,5 +209,3 @@ export const editFile = tool({
 		}
 	},
 });
-
-export type EditFileToolInvocation = UIToolInvocation<typeof editFile>;

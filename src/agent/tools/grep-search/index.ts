@@ -2,9 +2,9 @@ import {execFile} from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {z} from 'zod';
-import {tool, type UIToolInvocation} from 'ai';
-import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
-import {applyHeadLimit, getPreStatLimit} from '../../utils/head-limit';
+import {tool} from 'ai';
+import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
+import {applyHeadLimit, getPreStatLimit} from '../../utils/head-limit.js';
 import {getGrepSearchDescription} from './prompt.js';
 
 const VCS_DIRECTORIES_TO_EXCLUDE = [
@@ -593,5 +593,3 @@ export const grepSearch = tool({
 		}
 	},
 });
-
-export type GrepSearchToolInvocation = UIToolInvocation<typeof grepSearch>;

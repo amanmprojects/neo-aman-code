@@ -1,5 +1,4 @@
 import "./tui/assistantMarkdown";
-import "opentui-spinner/react";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { App } from "./tui/App";

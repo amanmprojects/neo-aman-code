@@ -1,69 +1,66 @@
+/** Default cap when the tool omits headLimit (schema: "Defaults to 250"). */
 const DEFAULT_HEAD_LIMIT = 250;
 
-export type HeadLimitResult<T> = {
-    items: T[];
-    appliedLimit?: number;
-    wasTruncated: boolean;
-};
-
 /**
- * Slices items for pagination. When `headLimit` is omitted, default cap is 250.
- * `headLimit === 0` means unlimited (after `offset`).
- *
- * Two-argument form `applyHeadLimit(items, cap)` takes the first `cap` items (no offset).
+ * Resolved limit: `undefined` means unlimited (caller passed `0`); otherwise a positive int.
+ * When `headLimit` is omitted, uses {@link DEFAULT_HEAD_LIMIT}.
  */
-export function applyHeadLimit<T>(
-    items: T[],
-    headLimit?: number,
-    offset?: number,
-): HeadLimitResult<T> {
-    if (arguments.length === 2 && offset === undefined) {
-        const cap = headLimit ?? DEFAULT_HEAD_LIMIT;
-        if (cap <= 0) {
-            return { items: [...items], wasTruncated: false };
-        }
-        const sliced = items.slice(0, cap);
-        return {
-            items: sliced,
-            appliedLimit: cap,
-            wasTruncated: items.length > cap,
-        };
-    }
+function resolveHeadLimit(headLimit: number | undefined): number | undefined {
+	if (headLimit === undefined) {
+		return DEFAULT_HEAD_LIMIT;
+	}
 
-    const off = offset ?? 0;
-    let effective = headLimit;
-    if (effective === undefined) {
-        effective = DEFAULT_HEAD_LIMIT;
-    }
-    if (effective === 0) {
-        const sliced = items.slice(off);
-        return {
-            items: sliced,
-            wasTruncated: false,
-            appliedLimit: undefined,
-        };
-    }
+	if (headLimit === 0) {
+		return undefined;
+	}
 
-    const sliced = items.slice(off, off + effective);
-    const wasTruncated = off + effective < items.length;
-    return {
-        items: sliced,
-        appliedLimit: effective,
-        wasTruncated,
-    };
+	return headLimit;
 }
 
 /**
- * Max number of raw rg lines to stat when paginating; `undefined` uses all lines.
+ * How many raw lines from ripgrep to keep before stat/sort in files_with_matches mode.
+ * `undefined` means use the full list (unlimited).
  */
 export function getPreStatLimit(
-    headLimit?: number,
-    offset?: number,
+	headLimit: number | undefined,
+	offset: number | undefined,
 ): number | undefined {
-    const off = offset ?? 0;
-    if (headLimit === 0) {
-        return undefined;
-    }
-    const cap = headLimit ?? DEFAULT_HEAD_LIMIT;
-    return off + cap;
+	const limit = resolveHeadLimit(headLimit);
+	if (limit === undefined) {
+		return undefined;
+	}
+
+	const o = offset ?? 0;
+	return o + limit;
+}
+
+export function applyHeadLimit<T>(
+	items: readonly T[],
+	headLimit: number | undefined,
+	offset: number = 0,
+): {
+	items: T[];
+	appliedLimit: number | undefined;
+	wasTruncated: boolean;
+} {
+	const limit = resolveHeadLimit(headLimit);
+	const start = Math.max(0, offset);
+	const afterOffset = items.slice(start);
+
+	if (limit === undefined) {
+		return {
+			items: [...afterOffset],
+			appliedLimit: undefined,
+			wasTruncated: false,
+		};
+	}
+
+	const page = afterOffset.slice(0, limit);
+	const wasTruncated = afterOffset.length > limit;
+
+	return {
+		items: page,
+		appliedLimit: limit,
+		wasTruncated,
+	};
 }

@@ -3,14 +3,9 @@ import type { ReasoningUIPart, TextUIPart } from "ai";
 import type { AgentUIMessage } from "../../agent";
 import { MessageFrame } from "./MessageFrame";
 import { syntaxStyleForAssistantMarkdown } from "../assistantMarkdown";
-import { BashToolBlock } from "./tools/BashToolBlock";
-import { EditFileToolBlock } from "./tools/EditFileToolBlock";
-import { GlobSearchToolBlock } from "./tools/GlobSearchToolBlock";
-import { GrepSearchToolBlock } from "./tools/GrepSearchToolBlock";
 import { ListDirToolBlock } from "./tools/ListDirToolBlock";
 import { ReadFileToolBlock } from "./tools/ReadFileToolBlock";
 import { TavilyExtractToolBlock, TavilySearchToolBlock } from "./tools/TavilyToolBlocks";
-import { WriteFileToolBlock } from "./tools/WriteFileToolBlock";
 
 const markdownSyntaxBody = syntaxStyleForAssistantMarkdown("body");
 const markdownSyntaxReasoning = syntaxStyleForAssistantMarkdown("reasoning");
@@ -91,16 +86,6 @@ export function AssistantMessage({
                         return <ListDirToolBlock key={key} invocation={part} />;
                     case "tool-readFile":
                         return <ReadFileToolBlock key={key} invocation={part} />;
-                    case "tool-writeFile":
-                        return <WriteFileToolBlock key={key} invocation={part} />;
-                    case "tool-editFile":
-                        return <EditFileToolBlock key={key} invocation={part} />;
-                    case "tool-bash":
-                        return <BashToolBlock key={key} invocation={part} />;
-                    case "tool-grepSearch":
-                        return <GrepSearchToolBlock key={key} invocation={part} />;
-                    case "tool-globSearch":
-                        return <GlobSearchToolBlock key={key} invocation={part} />;
                     case "tool-tavilySearch":
                         return <TavilySearchToolBlock key={key} invocation={part} />;
                     case "tool-tavilyExtract":

@@ -7,7 +7,7 @@ export function getGrepSearchDescription(): string {
 	return `A powerful search tool built on ripgrep
 
 Usage:
-- ALWAYS use grepSearch for search tasks. NEVER invoke \`grep\` or \`rg\` as a bash command. The grepSearch tool has been optimized for correct permissions and access.
+- ALWAYS use grepSearch for search tasks. NEVER invoke \`grep\` or \`rg\` as an executeCommand command. The grepSearch tool has been optimized for correct permissions and access.
 - Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
 - Filter files with includes parameter (e.g., "*.js", "**/*.tsx") or type parameter (e.g., "js", "py", "rust")
 - Output modes: "content" shows matching lines, "files_with_matches" shows only file paths (default), "count" shows match counts

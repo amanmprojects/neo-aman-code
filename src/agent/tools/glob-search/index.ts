@@ -1,8 +1,8 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import {tool, type UIToolInvocation} from 'ai';
+import {tool} from 'ai';
 import {z} from 'zod';
-import {isBlockedDevicePath, isUNCPath} from '../../path-guards';
+import {isBlockedDevicePath, isUNCPath} from '../../path-guards.js';
 import {getGlobSearchDescription} from './prompt.js';
 
 const DEFAULT_LIMIT = 100;
@@ -360,5 +360,3 @@ export const globSearch = tool({
 		}
 	},
 });
-
-export type GlobSearchToolInvocation = UIToolInvocation<typeof globSearch>;

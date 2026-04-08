@@ -55,7 +55,11 @@ export function ChatPage({
             placeholder={INPUT_PLACEHOLDER}
             focused
           />
-          {showFooter && <AppFooter variant="chat" cwdDisplay={cwdDisplay} version={version} />}
+          {showFooter && (
+            <box marginTop={0} border={["top"]} borderColor={theme.bg} borderStyle="single">
+              <AppFooter variant="chat" cwdDisplay={cwdDisplay} version={version} />
+            </box>
+          )}
         </box>
       </box>
 
