@@ -14,12 +14,12 @@ export const litellm = createOpenAICompatible({
 
 /** Model roster: order is default chat / picker order. Set `viaLitellm: false` for plain string ids (gateway passthrough). */
 export const MODEL_SPECS = [
-    { id: "zai-org/glm-4.7-maas", viaLitellm: true as const },
-    { id: "zai/glm-4.7-flash", viaLitellm: false as const },
+    // { id: "zai-org/glm-4.7-maas", viaLitellm: true as const },
+    // { id: "zai/glm-4.7-flash", viaLitellm: false as const },
     { id: "minimax/minimax-m2.7", viaLitellm: false as const },
 ] as const;
 
-export const AGENT_MODEL_ID = "zai-org/glm-4.7-maas";
+export const AGENT_MODEL_ID = "minimax/minimax-m2.7";
 
 export const MODEL_LIST: LanguageModel[] = MODEL_SPECS.map((spec) =>
     spec.viaLitellm ? litellm(spec.id) : spec.id,
